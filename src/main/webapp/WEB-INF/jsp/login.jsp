@@ -11,7 +11,7 @@
 <body>
 
 <h2>Login</h2>
-<form:form method="GET" action="/NettySpringWebServer/working">
+<form:form method="POST" action="/NettySpringWebServer/working">
    <table>
     <tr>
         <td><form:label path="name">Name</form:label></td>
@@ -26,11 +26,11 @@
             <input type="submit" value="Submit"/>
         </td>
     </tr>
-
+	<tr></tr><tr></tr><tr></tr>
      <tr>
         <td colspan="2">   
-		<p>您计算机的IP: <%=IP %> <br>
-		您计算机的类型：<%=Info %></p>
+		<p>IP: <%=IP %> <br>
+		Info：<%=Info %></p>
         </td>
     </tr>
      <tr>
