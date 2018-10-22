@@ -2,7 +2,7 @@
 <%@page language="java" import="java.util.*" pageEncoding="UTF-8" %> <!-- 设置页面的属性 -->
 <html>
 <head>
-    <title>Spring MVC Form Handling</title>
+    <title>Login</title>
     <%
     String IP = request.getRemoteAddr();
     String Info = request.getHeader("user-agent");

@@ -1,4 +1,4 @@
-package com.nesc.NettySpringWebServer;
+package com.nesc.Frontend;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;

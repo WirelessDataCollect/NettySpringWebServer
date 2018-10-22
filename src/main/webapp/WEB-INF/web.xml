@@ -4,9 +4,9 @@
     xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee 
     http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
 
-    <display-name>Spring MVC Form Handling</display-name>
+    <display-name>NescTech Web</display-name>
 	<listener>  
-    <listener-class>com.nesc.NettySpringWebServer.AutoRun</listener-class>
+    <listener-class>com.nesc.Frontend.AutoRun</listener-class>
 	</listener>  
 	
     <servlet>

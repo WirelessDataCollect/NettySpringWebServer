@@ -1,4 +1,4 @@
-package com.nesc.NettySpringWebServer;
+package com.nesc.Frontend;
 
 public class Admin {
    private String name;
