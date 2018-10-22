@@ -1,3 +1,5 @@
-/target/
-
+# 忽略shell
 *.sh
+
+# 忽略target文件
+/target/
