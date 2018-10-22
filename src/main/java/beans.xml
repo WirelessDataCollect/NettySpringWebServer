@@ -11,13 +11,13 @@
 
 	<context:annotation-config/>  <!-- 基于注解的配置 -->
 	
-   <bean id="runPcServer" class="com.nesc.NettySpringWebServer.RunPcServer">
+   <bean id="runPcServer" class="com.nesc.Backend.RunPcServer">
        <property name="threadName" value="PC-Thread"/>
        <property name="listenPort" value="8080"/>
    </bean>
 
 
-   <bean id="runDeviceServer" class="com.nesc.NettySpringWebServer.RunDeviceServer">
+   <bean id="runDeviceServer" class="com.nesc.Backend.RunDeviceServer">
        <property name="protocol" value="UDP"/>
        <property name="listenPort" value="5004"/>
        <property name="threadName" value="Device-Thread"/>
@@ -25,10 +25,10 @@
 
  
    <!-- 用于依赖注入 -->   
-   <bean id="dataProcessor" class="com.nesc.NettySpringWebServer.DataProcessor">
+   <bean id="dataProcessor" class="com.nesc.Backend.DataProcessor">
    		<property name="mongodb" ref="myMongoDB"/>
    </bean>
-   <bean id="myMongoDB" class="com.nesc.NettySpringWebServer.MyMongoDB"
+   <bean id="myMongoDB" class="com.nesc.Backend.MyMongoDB"
    		init-method="init" destroy-method="destroy">  <!-- 这一段写在dataProcessor的property内部也可以，即注入内部Bean -->
    		<property name="dbName" value="udp"/>
    		<property name="colName" value="data"/>

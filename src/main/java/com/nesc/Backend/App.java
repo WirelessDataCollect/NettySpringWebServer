@@ -1,4 +1,4 @@
-package com.nesc.NettySpringWebServer;
+package com.nesc.Backend;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;;
@@ -13,7 +13,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;;
 */
 public class App{
 	public static ApplicationContext context;
-    App() { 
+    public App() { 
     	context = new ClassPathXmlApplicationContext("beans.xml");
     	TestTools test = new TestTools();
     	test.start();	

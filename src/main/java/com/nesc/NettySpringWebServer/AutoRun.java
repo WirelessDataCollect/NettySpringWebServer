@@ -3,6 +3,8 @@ package com.nesc.NettySpringWebServer;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import com.nesc.Backend.App;
+
 public class AutoRun implements ServletContextListener{
 	/**
 	 * tomcat启动后自动运行的方法
