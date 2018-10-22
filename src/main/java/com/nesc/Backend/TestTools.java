@@ -4,13 +4,14 @@ package com.nesc.Backend;
 * 
 * 测试工具
 *
-* @author  nesc528
-* @Date    2018-9-13
-* @version 0.0.1
+* @author  nesc418
+* @Date    2018-10-22
+* @version 0.2.1
 */
 public class TestTools implements Runnable{
 	private Thread t;//线程
 	private int packsNum;
+
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -35,5 +36,15 @@ public class TestTools implements Runnable{
 			t = new Thread (this, "TestTools");
 			t.start ();
 		}
-	}	
+	}
+	/**
+	 * 关闭TestTools对象的线程
+	 * 
+	 *	
+	 * @return none
+	 */
+	public void stop () {
+		System.out.println("Stopping TestTools" );
+		t.interrupt();
+	}
 }

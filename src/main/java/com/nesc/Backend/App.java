@@ -7,19 +7,22 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;;
 * 
 * 后端主程序
 *
-* @author  nesc528
+* @author  nesc418
 * @Date    2018-9-7
 * @version 0.1.0
 */
 public class App{
-	public static ApplicationContext context;
+	private static ApplicationContext context;
+	private TestTools test;//工具
+	private RunPcServer pc_server;//面向PC的进程
+	private RunDeviceServer device_server;//面向设备的进程
     public App() { 
     	context = new ClassPathXmlApplicationContext("beans.xml");
-    	TestTools test = new TestTools();
+    	test = new TestTools();
     	test.start();	
-    	RunPcServer pc_server = (RunPcServer)context.getBean("runPcServer");
+    	pc_server = (RunPcServer)context.getBean("runPcServer");
     	pc_server.start();
-    	RunDeviceServer device_server = (RunDeviceServer)context.getBean("runDeviceServer");
+    	device_server = (RunDeviceServer)context.getBean("runDeviceServer");
     	device_server.start();   	
     }
 	/**
@@ -28,6 +31,27 @@ public class App{
 	 */
 	public static ApplicationContext getApplicationContext() {
 		return context;
+	}
+	/**
+	 * 获取TestTools
+	 * @return test
+	 */
+	public TestTools getTest() {
+		return this.test;
+	}
+	/**
+	 * 获取面向PC的进程
+	 * @return pc_server
+	 */
+	public RunPcServer getPcServer() {
+		return this.pc_server;
+	}
+	/**
+	 * 获取面向设备的进程
+	 * @return device_server
+	 */
+	public RunDeviceServer getDeviceServer() {
+		return this.device_server;
 	}
 }
 

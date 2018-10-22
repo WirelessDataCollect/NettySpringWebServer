@@ -12,17 +12,20 @@ public class AutoRun implements ServletContextListener{
 	 * @param arg0 事件
 	 * @return none
 	 */
+	public App app;
 	public void contextInitialized(ServletContextEvent arg0) {
-		App app = new App();//开几个线程
-		System.out.println("Mainfunc is running");
+		app = new App();//开几个线程
 	}
 	/**
 	 * tomcat关闭后自动运行的方法
+	 * 
 	 * 
 	 * @param arg0 事件
 	 * @return none
 	 */
     public void contextDestroyed(ServletContextEvent arg0){
-    	System.out.println("Mainfunc stopped");
+    	app.getDeviceServer().stop();
+    	app.getPcServer().stop();
+    	app.getTest().stop();
     }
 }

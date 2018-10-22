@@ -10,7 +10,7 @@ import io.netty.channel.socket.DatagramPacket;
 * 
 * UDP服务器的输入处理器函数.如果给多个Pipeline,需要给类添加@Sharable
 *
-* @author  nesc528
+* @author  nesc418
 * @Date    2018-9-7
 * @version 0.0.1
 */

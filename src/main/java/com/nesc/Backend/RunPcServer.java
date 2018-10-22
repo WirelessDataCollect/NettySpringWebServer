@@ -1,6 +1,5 @@
 package com.nesc.Backend;
 
-
 import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,14 +24,14 @@ import io.netty.util.ReferenceCountUtil;
 * 
 * 运行TCP服务器，用于连接上位机
 *
-* @author  nesc528
-* @Date    2018-8-29
-* @version 0.0.1
+* @author  nesc418
+* @Date    2018-10-22
+* @version 0.2.1
 */
 public class RunPcServer implements Runnable{
 	private Thread t;
 	private String threadName = "PC-Thread";
-	private int listenPort = 8081;
+	private int listenPort = 8080;
 	public Channel ch = null;
 	private volatile static Map<String,Channel> ch_map = new ConcurrentHashMap<String,Channel>();//存储PC连接的通道<PC[num],channel>
 
@@ -115,6 +114,14 @@ public class RunPcServer implements Runnable{
 			t = new Thread (this, threadName);
 			t.start ();
 		}
+	}
+	/**
+	 * 关闭RunPcServer对象的线程(使用interrup关闭，thread.stop不安全)
+	 * @return none
+	 */
+	public void stop () {
+		System.out.println("Stopping " +  threadName );
+		t.interrupt();
 	}
 }
 /**
