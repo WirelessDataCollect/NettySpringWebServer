@@ -14,6 +14,7 @@ public class LoginController{
    public ModelAndView admin() {
 	   return new ModelAndView("login","command",new Admin());//jsp文件
    }
+   
    //POST：在提交表单时，表达中的参数将作为请求头中的信息发送
    @RequestMapping(value = "/working",method = RequestMethod.POST)  //这里的value指的是地址
    public String login(@ModelAttribute("SpringWeb")Admin admin,ModelMap model) {
