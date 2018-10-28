@@ -19,8 +19,8 @@ public class TestTools implements Runnable{
 			packsNum = RunDeviceServer.getPacksNum();  //获取packsnums
 			RunDeviceServer.resetPacksNum();  //packsnums = 0
 			System.out.println("Packs num: "+packsNum);			
-			try {//休息1s
-				Thread.sleep(1000);//阻塞当前进程
+			try {//休息10s
+				Thread.sleep(10000);//阻塞当前进程
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

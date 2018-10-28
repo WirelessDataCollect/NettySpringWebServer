@@ -128,9 +128,9 @@ public class RunPcServer implements Runnable{
 * 
 * TCP服务器的输入处理器函数(ChannelHandler)
 *
-* @author  nesc528
-* @Date    2018-8-29
-* @version 0.0.1
+* @author  nesc418
+* @Date    2018-10-28
+* @version 0.1.1
 */
 class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     @Override

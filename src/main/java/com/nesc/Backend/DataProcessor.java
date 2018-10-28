@@ -51,6 +51,8 @@ public class DataProcessor {
 	public void setMongodb(MyMongoDB myMongoDB) {
 		mongodb = myMongoDB;//这个mongodb是依赖注入的
 	}
+	
+	
 	SingleResultCallback<Void> callback;
 	/**
 	* 总的数据包的解析和存储方法
@@ -75,10 +77,15 @@ public class DataProcessor {
 				.append("adc_val",bdo );
 //		System.out.println(doc);
 		/*doc存入数据库*/
-		mongodb.collection.insertOne(doc, new SingleResultCallback<Void>() {
-		    public void onResult(final Void result, final Throwable t) {
-			        System.out.println("Document inserted!");
-		    }});
+		//mongodb.insertOne已加锁
+		try{
+			mongodb.insertOne(doc, new SingleResultCallback<Void>() {
+			    public void onResult(final Void result, final Throwable t) {
+//					        System.out.println("Document inserted!");
+			    }});			
+		}catch(Exception e) {
+			System.err.println(e);
+		}		
 	}
 
 	/**
