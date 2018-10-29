@@ -95,11 +95,10 @@ public class RunPcServer implements Runnable{
             ch = cf.channel();
             ch.closeFuture().sync();      
             
-        } catch (Exception e) {
+        } catch (Exception e) {//线程会将中断interrupt作为一个终止请求
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
-        }
-        finally {
+        } finally {
         	 workerGroup.shutdownGracefully();
              bossGroup.shutdownGracefully();      	
         }
@@ -121,6 +120,7 @@ public class RunPcServer implements Runnable{
 	 */
 	public void stop () {
 		System.out.println("Stopping " +  threadName );
+		//当在一个被阻塞的线程(调用sleep或者wait)上调用interrupt时，阻塞调用将会被InterruptedException异常中断
 		t.interrupt();
 	}
 }
@@ -148,21 +148,25 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
     	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
-    	Map<String,Channel> map_temp = RunPcServer.getChMap();
-    	synchronized(map_temp) {
-    		map_temp.put(ctx.channel().remoteAddress().toString(), ctx.channel());
+    	synchronized(RunPcServer.getChMap()) { //这个map需要获取锁才能访问
+	    	Map<String,Channel> map_temp = RunPcServer.getChMap();
+	    	synchronized(map_temp) {
+	    		map_temp.put(ctx.channel().remoteAddress().toString(), ctx.channel());
+	    	}
+	    	
+	    	ctx.writeAndFlush(Unpooled.copiedBuffer("Connected!",CharsetUtil.UTF_8));
+	        ctx.fireChannelActive();
     	}
-    	
-    	ctx.writeAndFlush(Unpooled.copiedBuffer("Connected!",CharsetUtil.UTF_8));
-        ctx.fireChannelActive();
     }
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		Map<String,Channel> map_temp = RunPcServer.getChMap();
+		synchronized(RunPcServer.getChMap()) { //这个map需要获取锁才能访问
+			Map<String,Channel> map_temp = RunPcServer.getChMap();
 
-		map_temp.remove(ctx.channel().remoteAddress().toString());
-		System.out.println("PC "+ctx.channel().remoteAddress().toString()+" disconnected!");
-		ctx.fireChannelInactive();
+			map_temp.remove(ctx.channel().remoteAddress().toString());
+			System.out.println("PC "+ctx.channel().remoteAddress().toString()+" disconnected!");
+			ctx.fireChannelInactive();
+		}
 	}
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
