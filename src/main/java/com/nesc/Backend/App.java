@@ -23,7 +23,7 @@ public class App{
     	pc_server = (RunPcServer)context.getBean("runPcServer");
     	pc_server.start();
     	device_server = (RunDeviceServer)context.getBean("runDeviceServer");
-    	device_server.start();   	
+    	device_server.start();  
     }
 	/**
 	 * 获取bean的一个应用上下文

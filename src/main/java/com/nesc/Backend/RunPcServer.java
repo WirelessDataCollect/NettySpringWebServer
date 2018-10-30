@@ -33,8 +33,14 @@ public class RunPcServer implements Runnable{
 	private String threadName = "PC-Thread";
 	private int listenPort = 8080;
 	public Channel ch = null;
-	private volatile static Map<String,Channel> ch_map = new ConcurrentHashMap<String,Channel>();//存储PC连接的通道<PC[num],channel>
-
+	//存储PC连接的通道<PC[num],channel>
+	private volatile static Map<String,Channel> ch_map = new ConcurrentHashMap<String,Channel>();
+	//存储通道的状态
+	private volatile static Map<String,Integer> ch_sta = new ConcurrentHashMap<String,Integer>();
+	//三个状态，请求连接状态、服务器信任状态、数据实时接受状态
+	public final static int REQUEST_STA = 0x01;
+	public final static int TRUSTED_STA=0x02;
+	public final static int DATA_GET_STA=0x04;
 	/**
 	 * 设置线程名称。bean的set方法，bean会自动调用
 	 * 
@@ -66,7 +72,13 @@ public class RunPcServer implements Runnable{
 	public int getPcNum(){
 		return ch_map.size();
 	}
-	
+	/**
+	 * 获取保存同服务器连接的PC的通道状态
+	 * @return {@link Map}
+	 */
+	public static Map<String,Integer> getChSta(){
+		return ch_sta;
+	}	
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -148,25 +160,26 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
     	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
-    	synchronized(RunPcServer.getChMap()) { //这个map需要获取锁才能访问
-	    	Map<String,Channel> map_temp = RunPcServer.getChMap();
-	    	synchronized(map_temp) {
-	    		map_temp.put(ctx.channel().remoteAddress().toString(), ctx.channel());
-	    	}
-	    	
-	    	ctx.writeAndFlush(Unpooled.copiedBuffer("Connected!",CharsetUtil.UTF_8));
-	        ctx.fireChannelActive();
+    	synchronized(RunPcServer.getChMap()) {
+    		//channel使能
+    		RunPcServer.getChMap().put(ctx.channel().remoteAddress().toString(), ctx.channel());
+    		synchronized(RunPcServer.getChSta()) {
+    			//本channel设置为请求状态
+    			RunPcServer.getChSta().put(ctx.channel().remoteAddress().toString(), RunPcServer.REQUEST_STA);
+    		}
     	}
+    	
+    	ctx.writeAndFlush(Unpooled.copiedBuffer("Connected!",CharsetUtil.UTF_8));
+        ctx.fireChannelActive();
     }
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		synchronized(RunPcServer.getChMap()) { //这个map需要获取锁才能访问
-			Map<String,Channel> map_temp = RunPcServer.getChMap();
-
+		Map<String,Channel> map_temp = RunPcServer.getChMap();
+		synchronized(map_temp) {
 			map_temp.remove(ctx.channel().remoteAddress().toString());
-			System.out.println("PC "+ctx.channel().remoteAddress().toString()+" disconnected!");
-			ctx.fireChannelInactive();
 		}
+		System.out.println("PC "+ctx.channel().remoteAddress().toString()+" disconnected!");
+		ctx.fireChannelInactive();
 	}
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {

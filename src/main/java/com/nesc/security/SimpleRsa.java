@@ -1,7 +1,6 @@
 package com.nesc.security;
 
 import java.util.*;
-import java.io.InputStream;
 import java.math.*;
 
 
@@ -25,6 +24,7 @@ public class SimpleRsa {
 	 * @param bitLength 不要超过11，不然很可能会溢出造成计算失败
 	 */
 	public void setKey(int bitLength) {
+		System.out.println("====  Creating Rsa Params  ====");
 		//(1)获取素数p和Q
 		Random rnd_p = new Random(new Date().getTime());
 		Random rnd_q = new Random(new Date().getTime()+new Date().getTime()%10);
@@ -46,7 +46,7 @@ public class SimpleRsa {
 //				break;
 //			}
 //		}
-		this.publicE = BigInteger.probablePrime(15, rnd_e).intValue();
+		this.publicE = BigInteger.probablePrime(10, rnd_e).intValue();
 		
 		//(4)求d，使得ed=1 (mod phi),d为私钥(d为e的逆元，满足e*d=phi * K + 1)
 		for(BigInteger k=BigInteger.ONE;;k=k.add(BigInteger.ONE)) {
@@ -58,16 +58,26 @@ public class SimpleRsa {
 				break;
 			}
 		}
-		System.out.printf("P = %d\nQ = %d\n",this.bigPrime_p,this.bigPrime_q);
-		System.out.printf("Phi = %d\n",this.bigPhi);
-		System.out.printf("n = %d\n",this.publicN);
-		System.out.printf("e = %d\n",this.publicE);
-		System.out.printf("d = %d\n",this.privateKey);
+		System.out.printf("Big Prime P = %d\nBig Prime Q = %d\n",this.bigPrime_p,this.bigPrime_q);
+		System.out.printf("Euler Phi = %d\n",this.bigPhi);
+		System.out.printf("Public Key_n = %d\n",this.publicN);
+		System.out.printf("Public Key_e = %d\n",this.publicE);
+		System.out.printf("Private Key = %d\n",this.privateKey);
+		System.out.println("==========   end   ==========");
 	}
-	
+	/**
+	 * 使用自己产生的公钥加密数据，用于测试
+	 * @param val 加密前的数据
+	 * @return 加密后的数据
+	 */
 	public BigInteger getEncryptedVal(BigInteger val) {
 		return val.pow(this.publicE).mod(this.publicN);
 	}
+	/**
+	 * 使用私钥解密数据
+	 * @param val 加密后的数据
+	 * @return 解密后的数据
+	 */
 	public BigInteger getDencryptedVal(BigInteger val) {
 		return val.pow(this.privateKey).mod(this.publicN);
 	}	
