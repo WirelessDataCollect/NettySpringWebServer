@@ -159,12 +159,86 @@ public class RunPcServer implements Runnable{
 * @version 0.1.1
 */
 class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
+	private final static String PC_WANT_LOGIN = "Login";
+	private final static String PC_WANT_GET_RTDATA = "GetRtdata";
+	/**
+	 * 登录管理员，命令"login"
+	 * @param msg 登录信息(用户名+密码)，形式(逗号用于隔开同一个信息的加密数值，分号隔开不同信息)：
+	 * "第一个字符加密数值,第二个字符加密数值,...;第一个字符加密数值,第二个字符加密数值"
+	 * @return false：登录失败；true：登录成功
+	 */
+	private boolean login(ChannelHandlerContext ctx,String msg) {
+		//解析加密数值
+		try {
+			//转化为字符串
+			String[] info_str = msg.split(";");
+			
+			//提取管理员名称和密码，加密数值的字符串形式
+			String[] name_str = info_str[0].split(",");
+			String[] key_str = info_str[1].split(",");
+//			System.out.println("name:"+name_str[0]);
+//			System.out.println("key:"+key_str[0]);
+			//创建用于保存加密数值的BigInteger数组
+			char[] name_decoded = new char[name_str.length];
+			char[] key_decoded = new char[key_str.length];
+			int idx=0;
+			for(String n_str : name_str) {
+				name_decoded[idx] = (char)(RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString())
+						.getDencryptedVal(new BigInteger(n_str)).intValueExact());//如果BigInteger输出超出了char则会抛出异常
+				idx++;
+			}
+			idx=0;
+			for(String k_str : key_str) {
+				key_decoded[idx] = (char)(RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString())
+						.getDencryptedVal(new BigInteger(k_str)).intValueExact());
+				idx++;
+			}
+			String name = new String(name_decoded);
+			String key = new String(key_decoded);
+			//显示解码后的字符
+			System.out.println("name:"+name);
+			//显示解码后的字符
+			System.out.println("key:"+key);
+			if(name.equals("nesc")&&key.equals("123456")) {
+				return true;
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+		
+	}
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
-            ByteBuf in = (ByteBuf)msg;
-            System.out.println("Recv from PC:"+in.toString(CharsetUtil.UTF_8));
-            ctx.writeAndFlush(Unpooled.copiedBuffer(in));
+            String str_in = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
+            System.out.println("Recv from PC:"+str_in);
+            //返回给该上位机
+            ctx.writeAndFlush(Unpooled.copiedBuffer(str_in+"\n",CharsetUtil.UTF_8));
+            //提取命令
+            String cmd = str_in.split("\\+")[0];
+            String info = "1;1";
+            if(str_in.split("\\+").length>1) {
+                //提取信息
+                info = str_in.split("\\+")[1];    
+            }
+            switch(cmd) {
+            	case TCP_ServerHandler4PC.PC_WANT_LOGIN:
+                    if(login(ctx,info)) {
+                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Logined\n",CharsetUtil.UTF_8));
+                    }
+                    else {
+                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Login error\n",CharsetUtil.UTF_8));
+                    }
+                    break;
+            	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA:
+            		System.out.println("Request RTDATA!But Have Not Programs This Func!");
+            		break;
+            	default:
+            		System.out.println("Cmd Unkown!");
+            		break;
+            }
+
             
         } finally {
             // 抛弃收到的数据
@@ -205,7 +279,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     	ctx.writeAndFlush(Unpooled.copiedBuffer("Private key (n,e) = ("
     			+RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString()).getPublicE().toString()+","
     			+RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString()).getPublicN().toString()+")"
-    			, CharsetUtil.UTF_8));
+    			+"\n", CharsetUtil.UTF_8));
         ctx.fireChannelActive();
     }
 	@Override

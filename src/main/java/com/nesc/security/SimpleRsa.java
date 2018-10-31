@@ -63,14 +63,28 @@ public class SimpleRsa {
 		System.out.printf("Public Key_n = %d\n",this.publicN);
 		System.out.printf("Public Key_e = %d\n",this.publicE);
 		System.out.printf("Private Key = %d\n",this.privateKey);
-		System.out.println("==========   end   ==========");
+		System.out.println("====   end   ==========");
 		
 		//验证
-//		System.out.println("\n\nVerify!");
-//		System.out.println("Input A(65)");
-//		BigInteger temp = this.getEncryptedVal(BigInteger.valueOf('A'));
-//		System.out.println("Encrypted Val = "+temp.toString());
-//		System.out.println("Dencrypted Val = "+this.getDencryptedVal(temp).toString());
+		System.out.println("\n\nVerify!");
+		System.out.println("Input nesc and 123456");
+		String name = this.getEncryptedVal(BigInteger.valueOf('n')).toString()+","
+				+this.getEncryptedVal(BigInteger.valueOf('e')).toString()+","
+				+this.getEncryptedVal(BigInteger.valueOf('s')).toString()+","
+				+this.getEncryptedVal(BigInteger.valueOf('c')).toString();
+		String key = this.getEncryptedVal(BigInteger.valueOf('1')).toString()+","
+				+this.getEncryptedVal(BigInteger.valueOf('2')).toString()+","
+				+this.getEncryptedVal(BigInteger.valueOf('3')).toString()+","
+				+this.getEncryptedVal(BigInteger.valueOf('4')).toString()+","
+				+this.getEncryptedVal(BigInteger.valueOf('5')).toString()+","
+				+this.getEncryptedVal(BigInteger.valueOf('6')).toString();
+		System.out.println("User and Key Hint: "+name+";"+key);
+//		System.out.println("Encrypted name Val = "+name);
+//		System.out.println("Encrypted key Val = "+key);
+//		System.out.println("Dencrypted 'n' Val = "+
+//				this.getDencryptedVal(this.getEncryptedVal(BigInteger.valueOf('n'))).toString());
+//		System.out.println("Dencrypted '1' Val = "+
+//				this.getDencryptedVal(this.getEncryptedVal(BigInteger.valueOf('1'))).toString());
 	}
 	/**
 	 * 获取publicN
