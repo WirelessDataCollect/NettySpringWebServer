@@ -11,6 +11,7 @@ package com.nesc.Backend;
 public class TestTools implements Runnable{
 	private Thread t;//线程
 	private int packsNum;
+	private final static int SLEEP_MS = 5000;
 
 	@Override
 	public void run() {
@@ -18,9 +19,9 @@ public class TestTools implements Runnable{
 		while(true) {
 			packsNum = RunDeviceServer.getPacksNum();  //获取packsnums
 			RunDeviceServer.resetPacksNum();  //packsnums = 0
-			System.out.printf("%d Packs/s\t\t",packsNum);			
+			System.out.printf("%d Packs/5s\n",packsNum);			
 			try {//休息10s
-				Thread.sleep(2000);//阻塞当前进程
+				Thread.sleep(TestTools.SLEEP_MS);//阻塞当前进程
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -13,17 +13,17 @@ import java.math.*;
 * @version 0.0.1
 */
 public class SimpleRsa {
-	private BigInteger bigPrime_p,bigPrime_q;
-	private BigInteger bigPhi;
-	private BigInteger publicN; 
-	private int publicE,privateKey;//不能太大
+	private final BigInteger bigPrime_p,bigPrime_q;
+	private final BigInteger bigPhi;
+	private final BigInteger publicN; 
+	private final Integer publicE,privateKey;//不能太大
 	/**
 	 * 初始化密钥：(1)获取素数p和Q(2)计算n=pq,phi=(p-1)(q-1)(3)选择e,使得e远小于phi，且gcd(e,phi)=1
 	 * (4)求d，使得ed=1 (mod phi),d为私钥(d为e的逆元，满足e*d=phi * K + 1)
 	 * (5)发布(n,e)，即为公钥(n,e)
 	 * @param bitLength 不要超过11，不然很可能会溢出造成计算失败
 	 */
-	public void setKey(int bitLength) {
+	public SimpleRsa(int bitLength) {
 		System.out.println("====  Creating Rsa Params  ====");
 		//(1)获取素数p和Q
 		Random rnd_p = new Random(new Date().getTime());
@@ -64,7 +64,35 @@ public class SimpleRsa {
 		System.out.printf("Public Key_e = %d\n",this.publicE);
 		System.out.printf("Private Key = %d\n",this.privateKey);
 		System.out.println("==========   end   ==========");
+		
+		//验证
+//		System.out.println("\n\nVerify!");
+//		System.out.println("Input A(65)");
+//		BigInteger temp = this.getEncryptedVal(BigInteger.valueOf('A'));
+//		System.out.println("Encrypted Val = "+temp.toString());
+//		System.out.println("Dencrypted Val = "+this.getDencryptedVal(temp).toString());
 	}
+	/**
+	 * 获取publicN
+	 * @return {@link BigInteger}
+	 */
+	public BigInteger getPublicN() {
+		return this.publicN;
+	}
+	/**
+	 * 获取publicE
+	 * @return {@link Integer}
+	 */
+	public Integer getPublicE() {
+		return this.publicE;
+	}
+	/**
+	 * 获取publicKey
+	 * @return {@link Integer}
+	 */
+	public Integer getPrivateKey() {
+		return this.privateKey;
+	}	
 	/**
 	 * 使用自己产生的公钥加密数据，用于测试
 	 * @param val 加密前的数据

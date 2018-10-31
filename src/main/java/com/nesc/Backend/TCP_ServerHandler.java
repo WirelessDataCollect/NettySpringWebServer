@@ -21,7 +21,7 @@ public class TCP_ServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
-        	RunDeviceServer.incPacksNum();//1秒钟内的包++
+        	RunDeviceServer.incPacksNum();//n秒钟内的包++
     		ByteBuf temp = (ByteBuf)msg;
     		DeviceServerTools.send2Pc(temp);
     		processor.dataProcess(temp);

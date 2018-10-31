@@ -1,14 +1,18 @@
 package com.nesc.Backend;
 
+import java.math.BigInteger;
 import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.nesc.security.SimpleRsa;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -37,10 +41,13 @@ public class RunPcServer implements Runnable{
 	private volatile static Map<String,Channel> ch_map = new ConcurrentHashMap<String,Channel>();
 	//存储通道的状态
 	private volatile static Map<String,Integer> ch_sta = new ConcurrentHashMap<String,Integer>();
-	//三个状态，请求连接状态、服务器信任状态、数据实时接受状态
-	public final static int REQUEST_STA = 0x01;
+	//存储RSA加密算法类
+	private volatile static Map<String,SimpleRsa> ch_rsa = new ConcurrentHashMap<String,SimpleRsa>();
+	//三个状态，请求连接状态、服务器信任状态、数据实时接收状态
+	public final static int REQUEST_CONNECT_STA = 0x01;
 	public final static int TRUSTED_STA=0x02;
 	public final static int DATA_GET_STA=0x04;
+	public final static int MAX_CHANNEL_NUM=100;
 	/**
 	 * 设置线程名称。bean的set方法，bean会自动调用
 	 * 
@@ -79,6 +86,13 @@ public class RunPcServer implements Runnable{
 	public static Map<String,Integer> getChSta(){
 		return ch_sta;
 	}	
+	/**
+	 * 获取保存同服务器连接的PC的通道的RSA算法类
+	 * @return {@link Map}
+	 */
+	public static Map<String,SimpleRsa> getChRsa(){
+		return ch_rsa;
+	}
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -160,23 +174,53 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
     	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
+    	//通道数太多了
+    	if(RunPcServer.getChSta().size()>RunPcServer.MAX_CHANNEL_NUM) {
+    		ChannelFuture future = ctx.close();
+			future.addListener(new ChannelFutureListener(){
+				@Override
+				public void operationComplete(ChannelFuture f) {
+					if(!f.isSuccess()) {
+						f.cause().printStackTrace();
+					}
+				}
+			});
+			return;
+    	}
     	synchronized(RunPcServer.getChMap()) {
-    		//channel使能
-    		RunPcServer.getChMap().put(ctx.channel().remoteAddress().toString(), ctx.channel());
     		synchronized(RunPcServer.getChSta()) {
-    			//本channel设置为请求状态
-    			RunPcServer.getChSta().put(ctx.channel().remoteAddress().toString(), RunPcServer.REQUEST_STA);
+    			synchronized(RunPcServer.getChRsa()) {
+	        		//channel使能
+	        		RunPcServer.getChMap().put(ctx.channel().remoteAddress().toString(), ctx.channel());
+	    			//本channel设置为请求状态
+	    			RunPcServer.getChSta().put(ctx.channel().remoteAddress().toString(), RunPcServer.REQUEST_CONNECT_STA);
+					//加入该通道的RSA算法
+	    			RunPcServer.getChRsa().put(ctx.channel().remoteAddress().toString(), new SimpleRsa(10));
+   			
+    			}
     		}
     	}
     	
-    	ctx.writeAndFlush(Unpooled.copiedBuffer("Connected!",CharsetUtil.UTF_8));
+    	ctx.writeAndFlush(Unpooled.copiedBuffer("Connected!\n",CharsetUtil.UTF_8));
+    	ctx.writeAndFlush(Unpooled.copiedBuffer("Private key (n,e) = ("
+    			+RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString()).getPublicE().toString()+","
+    			+RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString()).getPublicN().toString()+")"
+    			, CharsetUtil.UTF_8));
         ctx.fireChannelActive();
     }
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		Map<String,Channel> map_temp = RunPcServer.getChMap();
-		synchronized(map_temp) {
-			map_temp.remove(ctx.channel().remoteAddress().toString());
+		synchronized(RunPcServer.getChSta()) {
+			synchronized(RunPcServer.getChMap()) {
+				synchronized(RunPcServer.getChRsa()) {
+					//删除该通道的状态
+					RunPcServer.getChSta().remove(ctx.channel().remoteAddress().toString());
+					//删除该通道
+					RunPcServer.getChMap().remove(ctx.channel().remoteAddress().toString());
+					//删除该通道的RSA算法
+					RunPcServer.getChRsa().remove(ctx.channel().remoteAddress().toString());
+				}		
+			}
 		}
 		System.out.println("PC "+ctx.channel().remoteAddress().toString()+" disconnected!");
 		ctx.fireChannelInactive();
