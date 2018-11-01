@@ -43,9 +43,9 @@ public class RunPcServer implements Runnable{
 	private volatile static Map<String,Integer> ch_sta = new ConcurrentHashMap<String,Integer>();
 	//存储RSA加密算法类
 	private volatile static Map<String,SimpleRsa> ch_rsa = new ConcurrentHashMap<String,SimpleRsa>();
-	//三个状态，请求连接状态、服务器信任状态、数据实时接收状态
+	//三个状态，请求连接状态、服务器信任状态(已登录状态)、数据实时接收状态
 	public final static int REQUEST_CONNECT_STA = 0x01;
-	public final static int TRUSTED_STA=0x02;
+	public final static int LOGINED_STA=0x02;
 	public final static int DATA_GET_STA=0x04;
 	public final static int MAX_CHANNEL_NUM=100;
 	/**
@@ -93,6 +93,34 @@ public class RunPcServer implements Runnable{
 	public static Map<String,SimpleRsa> getChRsa(){
 		return ch_rsa;
 	}
+	/**
+	 * 删除某个channel所有信息
+	 * @return {@link Map}
+	 */
+	public static synchronized void delCh(ChannelHandlerContext ctx){
+		//==========   先获取三个map对象  =========
+		Map<String,Integer> sta = RunPcServer.getChSta();
+		Map<String, Channel> ch = RunPcServer.getChMap(); 
+		Map<String, SimpleRsa> rsa = RunPcServer.getChRsa(); 
+		//=======================================
+		
+		//删除该通道的状态
+		sta.remove(ctx.channel().remoteAddress().toString());
+		//删除该通道
+		ch.remove(ctx.channel().remoteAddress().toString());
+		//删除该通道的RSA算法
+		rsa.remove(ctx.channel().remoteAddress().toString());
+		//关闭该通道
+		ChannelFuture future = ctx.close();
+    	future.addListener(new ChannelFutureListener(){
+			@Override
+			public void operationComplete(ChannelFuture f) {
+				if(!f.isSuccess()) {
+					f.cause().printStackTrace();
+				}
+			}
+		});
+	}	
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -161,60 +189,15 @@ public class RunPcServer implements Runnable{
 class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String PC_WANT_LOGIN = "Login";
 	private final static String PC_WANT_GET_RTDATA = "GetRtdata";
-	/**
-	 * 登录管理员，命令"login"
-	 * @param msg 登录信息(用户名+密码)，形式(逗号用于隔开同一个信息的加密数值，分号隔开不同信息)：
-	 * "第一个字符加密数值,第二个字符加密数值,...;第一个字符加密数值,第二个字符加密数值"
-	 * @return false：登录失败；true：登录成功
-	 */
-	private boolean login(ChannelHandlerContext ctx,String msg) {
-		//解析加密数值
-		try {
-			//转化为字符串
-			String[] info_str = msg.split(";");
-			
-			//提取管理员名称和密码，加密数值的字符串形式
-			String[] name_str = info_str[0].split(",");
-			String[] key_str = info_str[1].split(",");
-//			System.out.println("name:"+name_str[0]);
-//			System.out.println("key:"+key_str[0]);
-			//创建用于保存加密数值的BigInteger数组
-			char[] name_decoded = new char[name_str.length];
-			char[] key_decoded = new char[key_str.length];
-			int idx=0;
-			for(String n_str : name_str) {
-				name_decoded[idx] = (char)(RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString())
-						.getDencryptedVal(new BigInteger(n_str)).intValueExact());//如果BigInteger输出超出了char则会抛出异常
-				idx++;
-			}
-			idx=0;
-			for(String k_str : key_str) {
-				key_decoded[idx] = (char)(RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString())
-						.getDencryptedVal(new BigInteger(k_str)).intValueExact());
-				idx++;
-			}
-			String name = new String(name_decoded);
-			String key = new String(key_decoded);
-			//显示解码后的字符
-			System.out.println("name:"+name);
-			//显示解码后的字符
-			System.out.println("key:"+key);
-			if(name.equals("nesc")&&key.equals("123456")) {
-				return true;
-			}
-		}catch(Exception e) {
-			e.printStackTrace();
-		}
-		return false;
-		
-	}
+	private final static String PC_WANT_DISCONNECT = "Disconnect";
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
             String str_in = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
             System.out.println("Recv from PC:"+str_in);
             //返回给该上位机
-            ctx.writeAndFlush(Unpooled.copiedBuffer(str_in+"\n",CharsetUtil.UTF_8));
+            ctx.writeAndFlush(Unpooled.copiedBuffer("You send: "+str_in+"\n",CharsetUtil.UTF_8));
             //提取命令
             String cmd = str_in.split("\\+")[0];
             String info = "1;1";
@@ -224,15 +207,49 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
             }
             switch(cmd) {
             	case TCP_ServerHandler4PC.PC_WANT_LOGIN:
+            		//当前状态时请求连接状态而且用户名和密码匹配成功
                     if(login(ctx,info)) {
-                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Logined\n",CharsetUtil.UTF_8));
+                    	//如果当前状态是请求连接状态，才可以进行下一步
+                    	if(RunPcServer.getChSta().get(ctx.channel().remoteAddress().toString())==RunPcServer.REQUEST_CONNECT_STA) {
+                        	ctx.writeAndFlush(Unpooled.copiedBuffer("Logined\n",CharsetUtil.UTF_8));
+                        	//设置该通道为信任
+                        	RunPcServer.getChSta().put(ctx.channel().remoteAddress().toString(), RunPcServer.LOGINED_STA);
+                    	}
+                    	//如果当前已经登录了
+                    	else {
+                    		//do nothing!
+                    	}
+
                     }
                     else {
-                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Login error\n",CharsetUtil.UTF_8));
+//                    	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer("Login error\n",CharsetUtil.UTF_8));
+//                    	//等待发送完毕
+//                    	future.addListener(new ChannelFutureListener(){
+//            				@Override
+//            				public void operationComplete(ChannelFuture f) {
+//            					if(!f.isSuccess()) {
+//            						f.cause().printStackTrace();
+//            					}
+//            				}
+//            			});
+                    	writeFlushFuture(ctx,"Login error\n");
+                    	//删除这个通道
+                    	RunPcServer.delCh(ctx);
                     }
                     break;
             	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA:
-            		System.out.println("Request RTDATA!But Have Not Programs This Func!");
+            		if(RunPcServer.getChSta().get(ctx.channel().remoteAddress().toString())==RunPcServer.LOGINED_STA) {
+            			System.out.println("Request RTDATA!But Have Not Programs This Func!");
+            		}
+            		else if(RunPcServer.getChSta().get(ctx.channel().remoteAddress().toString())==RunPcServer.REQUEST_CONNECT_STA) {
+            			System.out.println("Have Not Login!");
+            		}
+            		else if (RunPcServer.getChSta().get(ctx.channel().remoteAddress().toString())==RunPcServer.DATA_GET_STA) {
+            			System.out.println("In Getting Rtdata Status!");
+            		}
+            		break;
+            	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT:
+            		RunPcServer.delCh(ctx);
             		break;
             	default:
             		System.out.println("Cmd Unkown!");
@@ -284,18 +301,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     }
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		synchronized(RunPcServer.getChSta()) {
-			synchronized(RunPcServer.getChMap()) {
-				synchronized(RunPcServer.getChRsa()) {
-					//删除该通道的状态
-					RunPcServer.getChSta().remove(ctx.channel().remoteAddress().toString());
-					//删除该通道
-					RunPcServer.getChMap().remove(ctx.channel().remoteAddress().toString());
-					//删除该通道的RSA算法
-					RunPcServer.getChRsa().remove(ctx.channel().remoteAddress().toString());
-				}		
-			}
-		}
+		RunPcServer.delCh(ctx);
 		System.out.println("PC "+ctx.channel().remoteAddress().toString()+" disconnected!");
 		ctx.fireChannelInactive();
 	}
@@ -305,6 +311,69 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         cause.printStackTrace();
         ctx.close();
     }
-    
+	/**
+	 * 登录管理员，命令"login"
+	 * @param msg 登录信息(用户名+密码)，形式(逗号用于隔开同一个信息的加密数值，分号隔开不同信息)：
+	 * "第一个字符加密数值,第二个字符加密数值,...;第一个字符加密数值,第二个字符加密数值"
+	 * @return false：登录失败；true：登录成功
+	 */
+	private boolean login(ChannelHandlerContext ctx,String msg) {
+		//解析加密数值
+		try {
+			//转化为字符串
+			String[] info_str = msg.split(";");
+			
+			//提取管理员名称和密码，加密数值的字符串形式
+			String[] name_str = info_str[0].split(",");
+			String[] key_str = info_str[1].split(",");
+//			System.out.println("name:"+name_str[0]);
+//			System.out.println("key:"+key_str[0]);
+			//创建用于保存加密数值的BigInteger数组
+			char[] name_decoded = new char[name_str.length];
+			char[] key_decoded = new char[key_str.length];
+			int idx=0;
+			for(String n_str : name_str) {
+				name_decoded[idx] = (char)(RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString())
+						.getDencryptedVal(new BigInteger(n_str)).intValueExact());//如果BigInteger输出超出了char则会抛出异常
+				idx++;
+			}
+			idx=0;
+			for(String k_str : key_str) {
+				key_decoded[idx] = (char)(RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString())
+						.getDencryptedVal(new BigInteger(k_str)).intValueExact());
+				idx++;
+			}
+			String name = new String(name_decoded);
+			String key = new String(key_decoded);
+//			//显示解码后的字符
+//			System.out.println("name:"+name);
+//			//显示解码后的字符
+//			System.out.println("key:"+key);
+			if(name.equals("nesc")&&key.equals("123456")) {
+				return true;
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+		
+	}
+    /**
+     * 发送信息并等待成功
+     * @param ctx 通道ctx
+     * @param msg 要发送的String信息
+     */
+    public void writeFlushFuture(ChannelHandlerContext ctx,String msg) {
+    	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg+"\n",CharsetUtil.UTF_8));
+    	//等待发送完毕
+    	future.addListener(new ChannelFutureListener(){
+			@Override
+			public void operationComplete(ChannelFuture f) {
+				if(!f.isSuccess()) {
+					f.cause().printStackTrace();
+				}
+			}
+		});
+    }
 }
 
