@@ -5,8 +5,7 @@ import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.nesc.security.SimpleRsa;
-
+import com.nesc.attributes.ChannelAttributes;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -38,16 +37,16 @@ public class RunPcServer implements Runnable{
 	private int listenPort = 8080;
 	public Channel ch = null;
 	//存储PC连接的通道<PC[num],channel>
-	private volatile static Map<String,Channel> ch_map = new ConcurrentHashMap<String,Channel>();
-	//存储通道的状态
-	private volatile static Map<String,Integer> ch_sta = new ConcurrentHashMap<String,Integer>();
-	//存储RSA加密算法类
-	private volatile static Map<String,SimpleRsa> ch_rsa = new ConcurrentHashMap<String,SimpleRsa>();
-	//三个状态，请求连接状态、服务器信任状态(已登录状态)、数据实时接收状态
-	public final static int REQUEST_CONNECT_STA = 0x01;
-	public final static int LOGINED_STA=0x02;
-	public final static int DATA_GET_STA=0x04;
-	public final static int MAX_CHANNEL_NUM=100;
+	private volatile static Map<String,ChannelAttributes> ch_map = new ConcurrentHashMap<String,ChannelAttributes>();
+//	//存储通道的状态
+//	private volatile static Map<String,Integer> ch_sta = new ConcurrentHashMap<String,Integer>();
+//	//存储RSA加密算法类
+//	private volatile static Map<String,SimpleRsa> ch_rsa = new ConcurrentHashMap<String,SimpleRsa>();
+//	//三个状态，请求连接状态、服务器信任状态(已登录状态)、数据实时接收状态
+//	public final static int REQUEST_CONNECT_STA = 0x01;
+//	public final static int LOGINED_STA=0x02;
+//	public final static int DATA_GET_STA=0x04;
+//	public final static int MAX_CHANNEL_NUM=100;
 	/**
 	 * 设置线程名称。bean的set方法，bean会自动调用
 	 * 
@@ -69,7 +68,7 @@ public class RunPcServer implements Runnable{
 	 * 获取保存同服务器连接的PC的通道
 	 * @return {@link Map}
 	 */
-	public static Map<String,Channel> getChMap(){
+	public static Map<String,ChannelAttributes> getChMap(){
 		return ch_map;
 	}
 	/**
@@ -79,51 +78,42 @@ public class RunPcServer implements Runnable{
 	public int getPcNum(){
 		return ch_map.size();
 	}
-	/**
-	 * 获取保存同服务器连接的PC的通道状态
-	 * @return {@link Map}
-	 */
-	public static Map<String,Integer> getChSta(){
-		return ch_sta;
-	}	
-	/**
-	 * 获取保存同服务器连接的PC的通道的RSA算法类
-	 * @return {@link Map}
-	 */
-	public static Map<String,SimpleRsa> getChRsa(){
-		return ch_rsa;
-	}
+//	/**
+//	 * 获取保存同服务器连接的PC的通道状态
+//	 * @return {@link Map}
+//	 */
+//	public static Map<String,Integer> getChSta(){
+//		return ch_sta;
+//	}	
+//	/**
+//	 * 获取保存同服务器连接的PC的通道的RSA算法类
+//	 * @return {@link Map}
+//	 */
+//	public static Map<String,SimpleRsa> getChRsa(){
+//		return ch_rsa;
+//	}
 	/**
 	 * 删除某个channel所有信息
 	 * @return {@link Map}
 	 */
 	public static synchronized void delCh(ChannelHandlerContext ctx){
 		//==========   先获取三个map对象  =========
-		Map<String,Integer> sta = RunPcServer.getChSta();
-		Map<String, Channel> ch = RunPcServer.getChMap(); 
-		Map<String, SimpleRsa> rsa = RunPcServer.getChRsa(); 
+//		Map<String,Integer> sta = RunPcServer.getChSta();
+		Map<String, ChannelAttributes> ch = RunPcServer.getChMap(); 
+//		Map<String, SimpleRsa> rsa = RunPcServer.getChRsa(); 
 		//=======================================
 		
 		//删除该通道的状态
-		sta.remove(ctx.channel().remoteAddress().toString());
+//		sta.remove(ctx.channel().remoteAddress().toString());
 		//删除该通道
 		ch.remove(ctx.channel().remoteAddress().toString());
 		//删除该通道的RSA算法
-		rsa.remove(ctx.channel().remoteAddress().toString());
-		//关闭该通道
-		ChannelFuture future = ctx.close();
-    	future.addListener(new ChannelFutureListener(){
-			@Override
-			public void operationComplete(ChannelFuture f) {
-				if(!f.isSuccess()) {
-					f.cause().printStackTrace();
-				}
-			}
-		});
+//		rsa.remove(ctx.channel().remoteAddress().toString());
+		//关闭该通道,并等待future完毕
+		TCP_ServerHandler4PC.ctxCloseFuture(ctx);
 	}	
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
         EventLoopGroup bossGroup = new NioEventLoopGroup();        // 用来接收进来的连接，这个函数可以设置多少个线程
         EventLoopGroup workerGroup = new NioEventLoopGroup();    // 用来处理已经被接收的连接
         
@@ -187,9 +177,10 @@ public class RunPcServer implements Runnable{
 * @version 0.1.1
 */
 class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
-	private final static String PC_WANT_LOGIN = "Login";
-	private final static String PC_WANT_GET_RTDATA = "GetRtdata";
-	private final static String PC_WANT_DISCONNECT = "Disconnect";
+	private final static String PC_WANT_LOGIN = "Login";//登录指令
+	private final static String PC_WANT_GET_RTDATA = "GetRtdata";//获取实时数据，必须先login（进入信任区）
+	private final static String PC_WANT_DISCONNECT = "Disconnect";//断开连接
+	private final static String PC_SET_TEST_PLACE = "SetPlace";//设置测试地点
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -197,7 +188,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
             String str_in = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
             System.out.println("Recv from PC:"+str_in);
             //返回给该上位机
-            ctx.writeAndFlush(Unpooled.copiedBuffer("You send: "+str_in+"\n",CharsetUtil.UTF_8));
+            TCP_ServerHandler4PC.writeFlushFuture(ctx,"You send: "+str_in+"\n");
             //提取命令
             String cmd = str_in.split("\\+")[0];
             String info = "1;1";
@@ -210,53 +201,45 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
             		//当前状态时请求连接状态而且用户名和密码匹配成功
                     if(login(ctx,info)) {
                     	//如果当前状态是请求连接状态，才可以进行下一步
-                    	if(RunPcServer.getChSta().get(ctx.channel().remoteAddress().toString())==RunPcServer.REQUEST_CONNECT_STA) {
-                        	ctx.writeAndFlush(Unpooled.copiedBuffer("Logined\n",CharsetUtil.UTF_8));
+                    	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
                         	//设置该通道为信任
-                        	RunPcServer.getChSta().put(ctx.channel().remoteAddress().toString(), RunPcServer.LOGINED_STA);
+                    		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.LOGINED_STA);
                     	}
                     	//如果当前已经登录了
                     	else {
                     		//do nothing!
                     	}
+                    	//返回登录信息
+                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Logined\n",CharsetUtil.UTF_8));
 
                     }
                     else {
-//                    	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer("Login error\n",CharsetUtil.UTF_8));
-//                    	//等待发送完毕
-//                    	future.addListener(new ChannelFutureListener(){
-//            				@Override
-//            				public void operationComplete(ChannelFuture f) {
-//            					if(!f.isSuccess()) {
-//            						f.cause().printStackTrace();
-//            					}
-//            				}
-//            			});
                     	writeFlushFuture(ctx,"Login error\n");
                     	//删除这个通道
                     	RunPcServer.delCh(ctx);
                     }
                     break;
             	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA:
-            		if(RunPcServer.getChSta().get(ctx.channel().remoteAddress().toString())==RunPcServer.LOGINED_STA) {
+            		if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {
             			System.out.println("Request RTDATA!But Have Not Programs This Func!");
             		}
-            		else if(RunPcServer.getChSta().get(ctx.channel().remoteAddress().toString())==RunPcServer.REQUEST_CONNECT_STA) {
+            		else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
             			System.out.println("Have Not Login!");
             		}
-            		else if (RunPcServer.getChSta().get(ctx.channel().remoteAddress().toString())==RunPcServer.DATA_GET_STA) {
-            			System.out.println("In Getting Rtdata Status!");
+            		else if (RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.DATA_GET_STA) {
+            			System.out.println("This Ch In Getting Rtdata Status!");
             		}
             		break;
             	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT:
             		RunPcServer.delCh(ctx);
             		break;
+            	case TCP_ServerHandler4PC.PC_SET_TEST_PLACE:
+            		//TODO 设置测试地点，不能和其他的测试地点重复
+            		break;
             	default:
             		System.out.println("Cmd Unkown!");
             		break;
-            }
-
-            
+            }            
         } finally {
             // 抛弃收到的数据
             ReferenceCountUtil.release(msg);//如果不是继承的SimpleChannel...则需要自行释放msg
@@ -266,36 +249,17 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
     	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
     	//通道数太多了
-    	if(RunPcServer.getChSta().size()>RunPcServer.MAX_CHANNEL_NUM) {
-    		ChannelFuture future = ctx.close();
-			future.addListener(new ChannelFutureListener(){
-				@Override
-				public void operationComplete(ChannelFuture f) {
-					if(!f.isSuccess()) {
-						f.cause().printStackTrace();
-					}
-				}
-			});
+    	if(RunPcServer.getChMap().size()>ChannelAttributes.MAX_CHANNEL_NUM) {
+    		TCP_ServerHandler4PC.ctxCloseFuture(ctx);
 			return;
     	}
-    	synchronized(RunPcServer.getChMap()) {
-    		synchronized(RunPcServer.getChSta()) {
-    			synchronized(RunPcServer.getChRsa()) {
-	        		//channel使能
-	        		RunPcServer.getChMap().put(ctx.channel().remoteAddress().toString(), ctx.channel());
-	    			//本channel设置为请求状态
-	    			RunPcServer.getChSta().put(ctx.channel().remoteAddress().toString(), RunPcServer.REQUEST_CONNECT_STA);
-					//加入该通道的RSA算法
-	    			RunPcServer.getChRsa().put(ctx.channel().remoteAddress().toString(), new SimpleRsa(10));
-   			
-    			}
-    		}
-    	}
+    	//加入该通道
+    	RunPcServer.getChMap().put(ctx.channel().remoteAddress().toString(), new ChannelAttributes(ctx));
     	
     	ctx.writeAndFlush(Unpooled.copiedBuffer("Connected!\n",CharsetUtil.UTF_8));
     	ctx.writeAndFlush(Unpooled.copiedBuffer("Private key (n,e) = ("
-    			+RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString()).getPublicE().toString()+","
-    			+RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString()).getPublicN().toString()+")"
+    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicE().toString()+","
+    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicN().toString()+")"
     			+"\n", CharsetUtil.UTF_8));
         ctx.fireChannelActive();
     }
@@ -333,14 +297,14 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			char[] key_decoded = new char[key_str.length];
 			int idx=0;
 			for(String n_str : name_str) {
-				name_decoded[idx] = (char)(RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString())
-						.getDencryptedVal(new BigInteger(n_str)).intValueExact());//如果BigInteger输出超出了char则会抛出异常
+				name_decoded[idx] = (char)(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString())
+						.getEncryption().getDencryptedVal(new BigInteger(n_str)).intValueExact());//如果BigInteger输出超出了char则会抛出异常
 				idx++;
 			}
 			idx=0;
 			for(String k_str : key_str) {
-				key_decoded[idx] = (char)(RunPcServer.getChRsa().get(ctx.channel().remoteAddress().toString())
-						.getDencryptedVal(new BigInteger(k_str)).intValueExact());
+				key_decoded[idx] = (char)(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString())
+						.getEncryption().getDencryptedVal(new BigInteger(k_str)).intValueExact());
 				idx++;
 			}
 			String name = new String(name_decoded);
@@ -363,7 +327,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
      * @param ctx 通道ctx
      * @param msg 要发送的String信息
      */
-    public void writeFlushFuture(ChannelHandlerContext ctx,String msg) {
+    public static void writeFlushFuture(ChannelHandlerContext ctx,String msg) {
     	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg+"\n",CharsetUtil.UTF_8));
     	//等待发送完毕
     	future.addListener(new ChannelFutureListener(){
@@ -375,5 +339,26 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			}
 		});
     }
+    public static void ctxCloseFuture(ChannelHandlerContext ctx) {
+		//关闭该通道
+		ChannelFuture future = ctx.close();
+    	future.addListener(new ChannelFutureListener(){
+			@Override
+			public void operationComplete(ChannelFuture f) {
+				if(!f.isSuccess()) {
+					f.cause().printStackTrace();
+				}
+			}
+		});
+    }
+    /**
+     * 获取ctx的远程地址字符串形式
+     * @param ctx
+     * @return
+     */
+    public static String getCtxRmAddrStr(ChannelHandlerContext ctx) {
+    	return ctx.channel().remoteAddress().toString();
+    }
+    	
 }
 

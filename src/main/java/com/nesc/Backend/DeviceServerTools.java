@@ -3,10 +3,9 @@ package com.nesc.Backend;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.nesc.attributes.ChannelAttributes;
+
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 
 /**
 * 
@@ -22,27 +21,16 @@ public class DeviceServerTools{
 	 * @param temp
 	 */
 	protected static void send2Pc(ByteBuf temp) {   //这里需要是静态的，非静态依赖对象
-		synchronized(RunPcServer.getChSta()) {
-			synchronized(RunPcServer.getChMap()) {
-				for(Iterator<Map.Entry<String,Integer>> item = RunPcServer.getChSta().entrySet().iterator();item.hasNext();) {
-					Map.Entry<String,Integer> entry = item.next();
+		synchronized(RunPcServer.getChMap()) {
+				for(Iterator<Map.Entry<String,ChannelAttributes>> item = RunPcServer.getChMap().entrySet().iterator();item.hasNext();) {
+					Map.Entry<String,ChannelAttributes> entry = item.next();
 					//判断是否为实时获取数据的状态
-					if(entry.getValue()==RunPcServer.DATA_GET_STA) {
+					if(entry.getValue().getStatus()==ChannelAttributes.DATA_GET_STA) {
 						ByteBuf temp1 = temp.copy();
-						ChannelFuture future = RunPcServer.getChMap().get(entry.getKey()).pipeline().writeAndFlush(temp1);
-						future.addListener(new ChannelFutureListener(){
-							@Override
-							public void operationComplete(ChannelFuture f) {
-								if(!f.isSuccess()) {
-									f.cause().printStackTrace();
-								}
-							}
-						});
+						//发送数据
+						TCP_ServerHandler4PC.writeFlushFuture(entry.getValue().getContext(),temp1.toString());
 					}
 			}
-
-
-			}	
 		}
 	}
 }
