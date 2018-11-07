@@ -31,6 +31,13 @@ public class DigtalFilterUtils {
 		assert(limit>0);
 		return (Math.abs(currentVal-lastVal)<limit)?currentVal:lastVal;
 	}
+	/**
+	 * 得到限幅滤波的limit参数
+	 * @param sps
+	 * @param slewRate
+	 * @param highestLevel
+	 * @return float 返回limit参数
+	 */
 	public static float getLimit(float sps,float slewRate,float highestLevel) {
 		//TODO
 		return 400;

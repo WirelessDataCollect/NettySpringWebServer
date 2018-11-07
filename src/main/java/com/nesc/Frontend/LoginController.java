@@ -9,6 +9,17 @@ import org.springframework.ui.ModelMap;
 @Controller
 //@RequestMapping("/ServerWeb")  //控制器WebController中提到的虚拟子文件夹
 public class LoginController{ 
+	
+	@RequestMapping(value = "/",method = RequestMethod.GET)//地址
+	   public ModelAndView page() {
+		   return new ModelAndView("login","command",new Admin());//jsp文件
+	   }
+	
+//	@RequestMapping(value = "/",method = RequestMethod.GET)//地址
+//	   public String page() {
+//		   return "redirect:/login";
+//	   }
+	
 	//GET:表单中设定的参数和参数值将附加到页面地址的末尾以参数的形式提交
    @RequestMapping(value = "/login",method = RequestMethod.GET)//地址
    public ModelAndView admin() {
