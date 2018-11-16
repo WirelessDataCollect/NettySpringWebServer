@@ -13,9 +13,14 @@
 	
    <bean id="runPcServer" class="com.nesc.Backend.RunPcServer">
        <property name="threadName" value="PC-Thread"/>
-       <property name="listenPort" value="8080"/>
+       <property name="listenPort" value="8089"/>
+       <property name="infoDb" ref="infoMongoDB"/>
    </bean>
-
+   <bean id="infoMongoDB" class="com.nesc.Backend.MyMongoDB"
+   		init-method="init" destroy-method="destroy">  <!-- 这一段写在dataProcessor的property内部也可以，即注入内部Bean -->
+   		<property name="dbName" value="user"/>
+   		<property name="colName" value="user"/>
+   </bean> 
 
    <bean id="runDeviceServer" class="com.nesc.Backend.RunDeviceServer">
        <property name="protocol" value="UDP"/>

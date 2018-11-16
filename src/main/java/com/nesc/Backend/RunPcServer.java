@@ -5,6 +5,7 @@ import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.mongodb.BasicDBObject;
 import com.nesc.attributes.ChannelAttributes;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -28,25 +29,22 @@ import io.netty.util.ReferenceCountUtil;
 * 运行TCP服务器，用于连接上位机
 *
 * @author  nesc418
-* @Date    2018-10-22
-* @version 0.2.1
+* @Date    2018-11-16
+* @version 0.2.2
 */
 public class RunPcServer implements Runnable{
 	private Thread t;
 	private String threadName = "PC-Thread";
 	private int listenPort = 8080;
 	public Channel ch = null;
-	//存储PC连接的通道<PC[num],channel>
+	/**
+	 * infoDb 从db中获取信息
+	 */
+	private static MyMongoDB infoDb;
+	/**
+	 * ch_map 存储PC连接的通道<PC[num],channel>
+	 */
 	private volatile static Map<String,ChannelAttributes> ch_map = new ConcurrentHashMap<String,ChannelAttributes>();
-//	//存储通道的状态
-//	private volatile static Map<String,Integer> ch_sta = new ConcurrentHashMap<String,Integer>();
-//	//存储RSA加密算法类
-//	private volatile static Map<String,SimpleRsa> ch_rsa = new ConcurrentHashMap<String,SimpleRsa>();
-//	//三个状态，请求连接状态、服务器信任状态(已登录状态)、数据实时接收状态
-//	public final static int REQUEST_CONNECT_STA = 0x01;
-//	public final static int LOGINED_STA=0x02;
-//	public final static int DATA_GET_STA=0x04;
-//	public final static int MAX_CHANNEL_NUM=100;
 	/**
 	 * 设置线程名称。bean的set方法，bean会自动调用
 	 * 
@@ -78,37 +76,29 @@ public class RunPcServer implements Runnable{
 	public int getPcNum(){
 		return ch_map.size();
 	}
-//	/**
-//	 * 获取保存同服务器连接的PC的通道状态
-//	 * @return {@link Map}
-//	 */
-//	public static Map<String,Integer> getChSta(){
-//		return ch_sta;
-//	}	
-//	/**
-//	 * 获取保存同服务器连接的PC的通道的RSA算法类
-//	 * @return {@link Map}
-//	 */
-//	public static Map<String,SimpleRsa> getChRsa(){
-//		return ch_rsa;
-//	}
+	/**
+	 * 设置用户信息
+	 * @param db 存储用户信息的db
+	 */
+	public void setInfoDb(MyMongoDB db) {
+		infoDb = db;
+	}
+	/**
+	 * 返回保存用户信息的DB
+	 * @return {@link MyMongoDB} MongoDB数据库
+	 */
+	public static MyMongoDB getInfoDb() {
+		
+		return infoDb;
+	}
 	/**
 	 * 删除某个channel所有信息
 	 * @return {@link Map}
 	 */
 	public static synchronized void delCh(ChannelHandlerContext ctx){
-		//==========   先获取三个map对象  =========
-//		Map<String,Integer> sta = RunPcServer.getChSta();
 		Map<String, ChannelAttributes> ch = RunPcServer.getChMap(); 
-//		Map<String, SimpleRsa> rsa = RunPcServer.getChRsa(); 
-		//=======================================
-		
-		//删除该通道的状态
-//		sta.remove(ctx.channel().remoteAddress().toString());
-		//删除该通道
+		//从通道的map中删除掉这个通道
 		ch.remove(ctx.channel().remoteAddress().toString());
-		//删除该通道的RSA算法
-//		rsa.remove(ctx.channel().remoteAddress().toString());
 		//关闭该通道,并等待future完毕
 		TCP_ServerHandler4PC.ctxCloseFuture(ctx);
 	}	
@@ -309,11 +299,17 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			}
 			String name = new String(name_decoded);
 			String key = new String(key_decoded);
-//			//显示解码后的字符
+			//			//显示解码后的字符
+//			System.out.println("Decoded--->");
 //			System.out.println("name:"+name);
 //			//显示解码后的字符
 //			System.out.println("key:"+key);
-			if(name.equals("nesc")&&key.equals("123456")) {
+			//BasicDBObject时Bson的实现
+			BasicDBObject filter = new BasicDBObject();
+			filter.put("name", name);
+			filter.put("key", key);
+			if(RunPcServer.getInfoDb().count(filter)>0) {
+				System.out.println("Name-Key Matched!!");
 				return true;
 			}
 		}catch(Exception e) {

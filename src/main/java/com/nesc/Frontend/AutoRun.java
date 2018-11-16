@@ -19,7 +19,6 @@ public class AutoRun implements ServletContextListener{
 	/**
 	 * tomcat关闭后自动运行的方法
 	 * 
-	 * 
 	 * @param arg0 事件
 	 * @return none
 	 */

@@ -4,14 +4,17 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.mongodb.MongoException;
 import com.mongodb.MongoWriteConcernException;
 import com.mongodb.MongoWriteException;
 import com.mongodb.async.SingleResultCallback;
+import com.mongodb.async.client.FindIterable;
 import com.mongodb.async.client.MongoClient;
 import com.mongodb.async.client.MongoClients;
 import com.mongodb.async.client.MongoCollection;
+//import com.mongodb.client.MongoCollection;
 import com.mongodb.async.client.MongoDatabase;
 /**
 * 
@@ -25,8 +28,12 @@ public class MyMongoDB{
 	public MongoCollection<Document> collection;
 	protected MongoClient mongoClient;
 	protected MongoDatabase mongoDatabase;
-	private String colName = "data";
-	private String dbName = "udp";
+	private String colName;
+	private String dbName;
+	/**
+	 * num 从mongodb中获取到的doc个数
+	 */
+	volatile Long docNum=(long) -1;
 	/**
 	 * MongoDB数据库的集合选择方法
 	 * @param colName
@@ -154,6 +161,56 @@ public class MyMongoDB{
 		}catch(MongoException e) {
 			throw e;
 		}
+	}
+	/**
+	 * 查找满足要求的doc有几个
+	 * @param filter 过滤条件
+	 * @return {@link FindIterable} /null
+	 */
+	public Long count(Bson filter) {
+		try {
+			SingleResultCallback<Long> callback = new SingleResultCallback<Long>() {
+	            @Override
+	            public void onResult(final Long result, final Throwable t) {
+	            	docNum = result;
+			        System.out.println("Find "+result.toString());
+			    }};
+			this.collection.countDocuments(filter, callback);
+			//等待改变
+			while(docNum<0) {
+			}
+			Long temp = docNum;
+			docNum = (long) -1;
+			return temp;
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return (long) 0;
+	}
+	/**
+	 * 过滤并找到doc
+	 * @param filter 过滤条件
+	 * @return {@link FindIterable} /null
+	 */
+	public FindIterable<Document> find(Bson filter) {
+		try {
+			return this.collection.find(filter);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return null;
+	}
+	/**
+	 * 找信息
+	 * @return {@link FindIterable} /null
+	 */
+	public FindIterable<Document> find() {
+		try {
+			return this.collection.find();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return null;
 	}
 	/**
 	 * 断开和mongodb的连接
