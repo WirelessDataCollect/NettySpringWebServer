@@ -26,16 +26,17 @@ public class LoginController{
 	   return new ModelAndView("login","command",new Admin());//jsp文件
    }
    
-   //POST：在提交表单时，表达中的参数将作为请求头中的信息发送
+   //POST：在提交表单时，表达中的参数将作为请求头中的信息发送（显示.../working，和working.jsp没有关系）
    @RequestMapping(value = "/working",method = RequestMethod.POST)  //这里的value指的是地址
    public String login(@ModelAttribute("SpringWeb")Admin admin,ModelMap model) {
 	   if(admin.getName().equals("song") && admin.getKey().equals("123456")) {
 		      model.addAttribute("name", admin.getName());
 		      model.addAttribute("key", admin.getKey());
-		      return "working";  //result视图从service方法中返回，呈现result.jsp  
+		      return "working";  //working.jsp
 	   }
 	   else {
 		   return "verifailed";
 	   }
    }
+
 }

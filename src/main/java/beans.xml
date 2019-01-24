@@ -17,7 +17,7 @@
        <property name="infoDb" ref="infoMongoDB"/>
    </bean>
    <bean id="infoMongoDB" class="com.nesc.Backend.MyMongoDB"
-   		init-method="init" destroy-method="destroy">  <!-- 这一段写在dataProcessor的property内部也可以，即注入内部Bean -->
+   		init-method="init" destroy-method="destroy">  
    		<property name="dbName" value="user"/>
    		<property name="colName" value="user"/>
    </bean> 
