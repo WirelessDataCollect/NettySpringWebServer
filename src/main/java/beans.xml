@@ -16,10 +16,11 @@
        <property name="listenPort" value="8089"/>
        <property name="infoDb" ref="infoMongoDB"/>
    </bean>
+   <!-- mongodb存储管理员信息的cols -->
    <bean id="infoMongoDB" class="com.nesc.Backend.MyMongoDB"
    		init-method="init" destroy-method="destroy">  
-   		<property name="dbName" value="user"/>
-   		<property name="colName" value="user"/>
+   		<property name="dbName" value="data"/>
+   		<property name="colName" value="admin"/>
    </bean> 
 
    <bean id="runDeviceServer" class="com.nesc.Backend.RunDeviceServer">
@@ -28,7 +29,6 @@
        <property name="threadName" value="Device-Thread"/>
    </bean>
 
- 
    <!-- 用于依赖注入 -->   
    <bean id="dataProcessor" class="com.nesc.Backend.DataProcessor">
    		<property name="mongodb" ref="myMongoDB"/>
@@ -38,4 +38,6 @@
    		<property name="dbName" value="udp"/>
    		<property name="colName" value="data"/>
    </bean> 
+      <!--<bean id="md5" class="com.nesc.security.Md5">
+   </bean>-->   
 </beans>

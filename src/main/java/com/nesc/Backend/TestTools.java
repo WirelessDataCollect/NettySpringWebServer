@@ -17,6 +17,7 @@ public class TestTools implements Runnable{
 	public void run() {
 		// TODO Auto-generated method stub
 		while(true) {
+			
 			packsNum = RunDeviceServer.getPacksNum();  //获取packsnums
 			RunDeviceServer.resetPacksNum();  //packsnums = 0
 			System.out.printf("%d Packs/5s\n",packsNum);			

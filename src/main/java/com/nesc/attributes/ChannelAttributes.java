@@ -1,5 +1,5 @@
 package com.nesc.attributes;
-import com.nesc.security.SimpleRsa;
+import com.nesc.security.Md5;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -21,7 +21,8 @@ public class ChannelAttributes {
 	public final static int MAX_CHANNEL_NUM=100;
 	private final Channel channel;//通道,初始化后不可改变
 	private final ChannelHandlerContext context;
-	SimpleRsa encryption;//加密算法
+	private String encryption;//加密算法
+	private String enrypt_salt;
 	Integer status;//通道状态
 	
 	/**
@@ -32,7 +33,8 @@ public class ChannelAttributes {
 		this.context = ctx;
 		this.channel = ctx.channel();//保存通道信息
 		this.status = ChannelAttributes.REQUEST_CONNECT_STA;//设置为请求连接状态
-		this.encryption = new SimpleRsa(10);//保存RSA加密算法信息
+		this.encryption = "Md5";//保存RSA加密算法信息
+		this.enrypt_salt = Md5.getRandStr();//随机初始化salt
 	}
 	/**
 	 * 返回该通道的状态
@@ -52,9 +54,16 @@ public class ChannelAttributes {
 	 * 返回该通道的加密算法
 	 * @return SimpleRsa 加密算法
 	 */
-	public SimpleRsa getEncryption() {
+	public String getEncryption() {
 		return this.encryption;
-	}		
+	}	
+	/**
+	 * 返回该通道的salt
+	 * @return String 盐值字符串
+	 */
+	public String getSalt() {
+		return this.enrypt_salt;
+	}	
 	/**
 	 * 返回该通道的Channel类
 	 * @return Channel 通道类

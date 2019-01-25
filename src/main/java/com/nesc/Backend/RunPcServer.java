@@ -1,12 +1,17 @@
 package com.nesc.Backend;
-
-import java.math.BigInteger;
 import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.bson.Document;
+
 import com.mongodb.BasicDBObject;
+import com.mongodb.Block;
+import com.mongodb.async.SingleResultCallback;
+import com.mongodb.async.client.FindIterable;
 import com.nesc.attributes.ChannelAttributes;
+import com.nesc.security.Md5;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -37,6 +42,7 @@ public class RunPcServer implements Runnable{
 	private String threadName = "PC-Thread";
 	private int listenPort = 8080;
 	public Channel ch = null;
+	
 	/**
 	 * infoDb 从db中获取信息
 	 */
@@ -91,6 +97,7 @@ public class RunPcServer implements Runnable{
 		
 		return infoDb;
 	}
+
 	/**
 	 * 删除某个channel所有信息
 	 * @return {@link Map}
@@ -171,43 +178,26 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String PC_WANT_GET_RTDATA = "GetRtdata";//获取实时数据，必须先login（进入信任区）
 	private final static String PC_WANT_DISCONNECT = "Disconnect";//断开连接
 	private final static String PC_SET_TEST_PLACE = "SetPlace";//设置测试地点
-
+//	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
+	
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    	
         try {
-            String str_in = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
-            System.out.println("Recv from PC:"+str_in);
-            //返回给该上位机
-            TCP_ServerHandler4PC.writeFlushFuture(ctx,"You send: "+str_in+"\n");
-            //提取命令
-            String cmd = str_in.split("\\+")[0];
-            String info = "1;1";
-            if(str_in.split("\\+").length>1) {
-                //提取信息
-                info = str_in.split("\\+")[1];    
-            }
+        	//转化为string
+        	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
+        	String[] splitMsg = message.split("\\+");//将CMD和info分成两段
+        	String cmd = splitMsg[0];
+            //返回信息
+            System.out.println("Recv from PC:"+message);
+            //判断cmd类型
             switch(cmd) {
-            	case TCP_ServerHandler4PC.PC_WANT_LOGIN:
+            	
+            	case TCP_ServerHandler4PC.PC_WANT_LOGIN://PC想要登录
+            		String info = splitMsg[1];
             		//当前状态时请求连接状态而且用户名和密码匹配成功
-                    if(login(ctx,info)) {
-                    	//如果当前状态是请求连接状态，才可以进行下一步
-                    	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
-                        	//设置该通道为信任
-                    		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.LOGINED_STA);
-                    	}
-                    	//如果当前已经登录了
-                    	else {
-                    		//do nothing!
-                    	}
-                    	//返回登录信息
-                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Logined\n",CharsetUtil.UTF_8));
+            		loginMd5(ctx,info);
 
-                    }
-                    else {
-                    	writeFlushFuture(ctx,"Login error\n");
-                    	//删除这个通道
-                    	RunPcServer.delCh(ctx);
-                    }
                     break;
             	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA:
             		if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {
@@ -245,12 +235,16 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     	}
     	//加入该通道
     	RunPcServer.getChMap().put(ctx.channel().remoteAddress().toString(), new ChannelAttributes(ctx));
-    	
-    	ctx.writeAndFlush(Unpooled.copiedBuffer("Connected!\n",CharsetUtil.UTF_8));
-    	ctx.writeAndFlush(Unpooled.copiedBuffer("Private key (n,e) = ("
-    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicE().toString()+","
-    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicN().toString()+")"
-    			+"\n", CharsetUtil.UTF_8));
+    	String salt = RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getSalt();
+    	ctx.writeAndFlush(Unpooled.copiedBuffer("RandStr:"+salt,CharsetUtil.UTF_8));//发送salt
+//    	ctx.writeAndFlush(Unpooled.copiedBuffer("!!!!!!!!!!What!!!!!!",CharsetUtil.UTF_8));//发送salt
+    	System.out.println("RandStr:"+salt);//打印salt
+//    	System.out.println("Key Hash:"+Md5.getKeySaltHash("song", "123"));
+    	//发送RSA算法的n和e
+//    	ctx.writeAndFlush(Unpooled.copiedBuffer("Private key (n,e) = ("
+//    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicE().toString()+","
+//    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicN().toString()+")"
+//    			+"\n", CharsetUtil.UTF_8));
         ctx.fireChannelActive();
     }
 	@Override
@@ -266,65 +260,137 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         ctx.close();
     }
 	/**
-	 * 登录管理员，命令"login"
-	 * @param msg 登录信息(用户名+密码)，形式(逗号用于隔开同一个信息的加密数值，分号隔开不同信息)：
-	 * "第一个字符加密数值,第二个字符加密数值,...;第一个字符加密数值,第二个字符加密数值"
-	 * @return false：登录失败；true：登录成功
+	 * 登录管理员Md5加密，验证通过则链接
+	 * 
+	 * 验证不通过也不断开
+     * info
+	 * |---------;---------|
+	 *    user     keyHash
+	 * @param msg:user;keyHash
+	 * @return null
 	 */
-	private boolean login(ChannelHandlerContext ctx,String msg) {
+	private void loginMd5(ChannelHandlerContext ctx,String info) {
+		//获取该通道盐值
+		String salt = RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getSalt();
+
+		String[] splitInfo = info.split(";");
+		String userStr = splitInfo[0];
+//		System.out.println("User Name from pc:"+userStr);//显示从pc获取到的用户名
+		String keyHashStr = splitInfo[1];//md5(md5(key)+salt)
 		//解析加密数值
 		try {
-			//转化为字符串
-			String[] info_str = msg.split(";");
-			
-			//提取管理员名称和密码，加密数值的字符串形式
-			String[] name_str = info_str[0].split(",");
-			String[] key_str = info_str[1].split(",");
-//			System.out.println("name:"+name_str[0]);
-//			System.out.println("key:"+key_str[0]);
-			//创建用于保存加密数值的BigInteger数组
-			char[] name_decoded = new char[name_str.length];
-			char[] key_decoded = new char[key_str.length];
-			int idx=0;
-			for(String n_str : name_str) {
-				name_decoded[idx] = (char)(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString())
-						.getEncryption().getDencryptedVal(new BigInteger(n_str)).intValueExact());//如果BigInteger输出超出了char则会抛出异常
-				idx++;
-			}
-			idx=0;
-			for(String k_str : key_str) {
-				key_decoded[idx] = (char)(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString())
-						.getEncryption().getDencryptedVal(new BigInteger(k_str)).intValueExact());
-				idx++;
-			}
-			String name = new String(name_decoded);
-			String key = new String(key_decoded);
-			//			//显示解码后的字符
-//			System.out.println("Decoded--->");
-//			System.out.println("name:"+name);
-//			//显示解码后的字符
-//			System.out.println("key:"+key);
 			//BasicDBObject时Bson的实现
 			BasicDBObject filter = new BasicDBObject();
-			filter.put("name", name);
-			filter.put("key", key);
-			if(RunPcServer.getInfoDb().count(filter)>0) {
-				System.out.println("Name-Key Matched!!");
-				return true;
-			}
+			filter.put("user", userStr);
+			FindIterable<Document> docIter = RunPcServer.getInfoDb().collection.find(filter) ;
+			//forEach：异步操作
+			docIter.forEach(new Block<Document>() {
+			    @Override
+			    public void apply(final Document document) {//每个doc所做的操作
+			    	
+			    	//先获取db中user的key
+			    	String key = (String) document.get("key");//获取密码
+			    	System.out.println("\nKey in DB: "+key);//查看查询到的密码明文
+			    	//计算得到keyHash
+			    	String keyHashStrLocal = Md5.getKeySaltHash(key, salt);
+			    	//打印出收到的keyHash和本地计算出来的keyHash
+//			    	System.out.println("Key Hash Remot:"+keyHashStr);
+//			    	System.out.println("Key Hash Local:"+keyHashStrLocal);
+			    	if(keyHashStrLocal.equals(keyHashStr)){
+			    		System.out.println("Key Correct!");
+                    	//如果当前状态是请求连接状态，才可以进行下一步
+                    	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
+                        	//设置该通道为信任
+                    		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.LOGINED_STA);
+                    	}
+                    	//如果当前已经登录了
+                    	else {
+                    		//do nothing!
+                    	}
+			    	}
+			    	else {
+			    		System.out.println("Key Incorrect!");
+			    	}
+			    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
+			        @Override
+			        public void onResult(final Void result, final Throwable t) {
+			        	//查询操作结束后，查看是否登录成功
+	                    if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {//登录成功
+	                    	//返回登录信息
+	                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Logined\n",CharsetUtil.UTF_8));
+	                    }
+	                    else {//登录失败，已经断开了
+	                    	writeFlushFuture(ctx,"Login error\n");
+	                    	//删除这个通道
+	                    	RunPcServer.delCh(ctx);                    	
+	                    }
+			            System.out.println("Mongo Operate Finished!");
+			        }			    	
+			    });
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
-		return false;
-		
+
 	}
+//	/**
+//	 * 登录管理员，命令"login"
+//	 * @param msg 登录信息(用户名+密码)，形式(逗号用于隔开同一个信息的加密数值，分号隔开不同信息)：
+//	 * "第一个字符加密数值,第二个字符加密数值,...;第一个字符加密数值,第二个字符加密数值"
+//	 * @return false：登录失败；true：登录成功
+//	 */
+//	private boolean loginRsa(ChannelHandlerContext ctx,String msg) {
+//		//解析加密数值
+//		try {
+//			//转化为字符串
+//			String[] info_str = msg.split(";");
+//			
+//			//提取管理员名称和密码，加密数值的字符串形式
+//			String[] name_str = info_str[0].split(",");
+//			String[] key_str = info_str[1].split(",");
+////			System.out.println("name:"+name_str[0]);
+////			System.out.println("key:"+key_str[0]);
+//			//创建用于保存加密数值的BigInteger数组
+//			char[] name_decoded = new char[name_str.length];
+//			char[] key_decoded = new char[key_str.length];
+//			int idx=0;
+//			for(String n_str : name_str) {
+//				name_decoded[idx] = (char)(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString())
+//						.getEncryption().getDencryptedVal(new BigInteger(n_str)).intValueExact());//如果BigInteger输出超出了char则会抛出异常
+//				idx++;
+//			}
+//			idx=0;
+//			for(String k_str : key_str) {
+//				key_decoded[idx] = (char)(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString())
+//						.getEncryption().getDencryptedVal(new BigInteger(k_str)).intValueExact());
+//				idx++;
+//			}
+//			String name = new String(name_decoded);
+//			String key = new String(key_decoded);
+//			//			//显示解码后的字符
+////			System.out.println("Decoded--->");
+////			System.out.println("name:"+name);
+////			//显示解码后的字符
+////			System.out.println("key:"+key);
+//			//BasicDBObject时Bson的实现
+//			BasicDBObject filter = new BasicDBObject();
+//			filter.put("name", name);
+//			filter.put("key", key);
+//			if(RunPcServer.getInfoDb().count(filter)>0) {
+//				System.out.println("Name-Key Matched!!");
+//				return true;
+//			}
+//		}catch(Exception e) {
+//			e.printStackTrace();
+//		}
+//		return false;	
+//	}
     /**
      * 发送信息并等待成功
      * @param ctx 通道ctx
      * @param msg 要发送的String信息
      */
     public static void writeFlushFuture(ChannelHandlerContext ctx,String msg) {
-    	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg+"\n",CharsetUtil.UTF_8));
+    	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer("\n"+msg+"\n",CharsetUtil.UTF_8));
     	//等待发送完毕
     	future.addListener(new ChannelFutureListener(){
 			@Override
@@ -355,6 +421,6 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     public static String getCtxRmAddrStr(ChannelHandlerContext ctx) {
     	return ctx.channel().remoteAddress().toString();
     }
-    	
+
 }
 

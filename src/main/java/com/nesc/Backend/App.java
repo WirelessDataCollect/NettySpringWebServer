@@ -1,7 +1,7 @@
 package com.nesc.Backend;
 
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
 * 
@@ -17,9 +17,10 @@ public class App{
 	private RunPcServer pc_server;//面向PC的进程
 	private RunDeviceServer device_server;//面向设备的进程
     public App() { 
+    	
     	context = new ClassPathXmlApplicationContext("beans.xml");
     	test = new TestTools();
-    	test.start();	
+    	test.start();
     	pc_server = (RunPcServer)context.getBean("runPcServer");
     	pc_server.start();
     	device_server = (RunDeviceServer)context.getBean("runDeviceServer");
