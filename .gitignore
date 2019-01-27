@@ -3,3 +3,6 @@
 
 # 忽略target文件
 /target/
+
+# 忽视掉war包
+*.war
