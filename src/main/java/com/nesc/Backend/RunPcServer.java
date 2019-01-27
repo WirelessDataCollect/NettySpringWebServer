@@ -1,6 +1,4 @@
 package com.nesc.Backend;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -187,20 +185,28 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	//优先级低
 	private final static String PC_WANT_DISCONNECT = "Disconnect";//断开连接
 	private final static String HEART_BEAT_SIGNAL = "HeartBeat";//心跳包
-
-//	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
 	
-    @SuppressWarnings("null")
-	@Override
+	//用于分割消息的字符
+	private final static String SEG_CMD_INFO = "\\+";//分割命令和信息
+	private final static String SEG_INFO1_INFON = ";";//分割多个子信息
+	private final static String SEG_KEY_VALUE = ":";//分割key和calue
+	private final static String SEG_LOWER_UPPER_BOUND = ",";//分割value的上下界
+//	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
+	//给某个命令的返回信息
+	private final static String DONE_SIGNAL_OK = "OK";//成功
+	private final static String DONE_SIGNAL_OVER = "OVER";//结束，一般用于，数据发送
+	private final static String DONE_SIGNAL_ERROR = "ERROR";//失败
+	private final static String SEG_CMD_DONE_SIGNAL = SEG_KEY_VALUE;//分割Key:Value,如Login:OK，登录成功
+    @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
         	//转化为string
         	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
             //输出信息
             System.out.println("Recv from PC:"+message);
-        	String[] splitMsg = message.split("\\+");//将CMD和info分成两段
+        	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO);//将CMD和info分成两段
         	String cmd = splitMsg[0];
-        	System.out.println("SplitMsg Len: "+String.valueOf(splitMsg.length));//输出获取到的信息长度
+//        	System.out.println("SplitMsg Len: "+String.valueOf(splitMsg.length));//输出获取到的信息长度
         	//判断当前上位机状态（未登录、已登录等）
         	//TODO 将REQUEST_CONNECT_STA改回来
         	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//已经登录
@@ -215,13 +221,16 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	    					public void apply(String name) {
 	    						System.out.printf("\nGet One doc name:%s\n",name);
 	    						//TODO 后期考虑是否全部缓存再flush
-	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+name+"\n",CharsetUtil.UTF_8));//放到Netty缓存区中，最后在SingleResultCallback中发送
+	    						//放到Netty缓存区中，最后在SingleResultCallback中发送
+	    						TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+name+"\n");//发送完毕收到一个通知
+//	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+name+"\n",CharsetUtil.UTF_8));
 	    					}
 	                	},  new SingleResultCallback<Void>() {
 	    					@Override
 	    					public void onResult(Void result, Throwable t) {
-	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+"Over",CharsetUtil.UTF_8));//发给上位机doc名全部发送完毕
-	    						System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+"Over");
+	    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+//	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+"Over",CharsetUtil.UTF_8));//发给上位机doc名全部发送完毕
+	    						System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);	    						
 	    					}	
 	                	});
 	                	break;
@@ -229,27 +238,27 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 		//TODO  to test
                 		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
                 			//splitMsg[1]格式    |key:info;key:info;......|
-                			String[] filtersStr = splitMsg[1].split(";");//将信息划分为多个filters
-                			System.out.println("filterStr:"+filtersStr[0]);
+                			String[] filtersStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON);//将信息划分为多个filters
+//                			System.out.println("filterStr:"+filtersStr[0]);
                  			//filter
                 			BasicDBObject filter = new BasicDBObject();
                  			//缓存filter的上下界
                  			int lowerBound=0;int upperBound=0;
                  			for(String filterStr:filtersStr) {//将过滤信息都put到filter中
-                 				String[] oneFilter = filterStr.split(":",2);//eg.{test:test1_201901251324}
+                 				String[] oneFilter = filterStr.split(TCP_ServerHandler4PC.SEG_KEY_VALUE,2);//eg.{test:test1_201901251324}
 
                  				switch(oneFilter[0]) {
     	             				case DataProcessor.MONGODB_KEY_TESTNAME://过滤测试名称，test:xxxxx
     	             					filter.put(oneFilter[0], oneFilter[1]);
     	             					break;
     	             				case DataProcessor.MONGODB_KEY_YYYYMMDD://过滤年月日,yyyy_mm_dd:xxxxxx
-    	             					lowerBound = Integer.parseInt((oneFilter[1].split(","))[0]);//小的日期
-    	             					upperBound = Integer.parseInt((oneFilter[1].split(","))[1]);//大的日期
+    	             					lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+    	             					upperBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[1]);//大的日期
     	             					filter.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
     	             					break;
     	             				case DataProcessor.MONGODB_KEY_HEADTIME://过滤每一天中的ms,headtime:xxxxxx
-    	             					lowerBound= Integer.parseInt((oneFilter[1].split(","))[0]);//小的时间/ms
-    	             					upperBound = Integer.parseInt((oneFilter[1].split(","))[1]);//大的时间/ms
+    	             					lowerBound= Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的时间/ms
+    	             					upperBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[1]);//大的时间/ms
     	             					filter.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
     	             					break;
     	             				default:
@@ -262,18 +271,20 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     						    public void apply(final Document document) {//每个doc所做的操作
 //    						    	ctx.writeAndFlush(Unpooled.copiedBuffer((String)document.get("raw_data"),CharsetUtil.UTF_8));//发给上位机原始数据
     						    	ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
-//    						    	ctx.writeAndFlush((ByteBuf)document.get("raw_data"));//发给上位机原始数据
-    						    	ctx.writeAndFlush(Unpooled.copiedBuffer((String)document.get("raw_data"),CharsetUtil.UTF_8));//发给上位机原始数据
+//    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,(ByteBuf)document.get(DataProcessor.MONGODB_KEY_RAW_DATA));//发给上位机原始数据
+    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,(String)document.get(DataProcessor.MONGODB_KEY_RAW_DATA));
     						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
     						        @Override
     						        public void onResult(final Void result, final Throwable t) {
     						        	//TODO
-    						        	ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over",CharsetUtil.UTF_8));//发给上位机原始数据
-    						            System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over");
+    						        	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+//    						        	ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over",CharsetUtil.UTF_8));//发给上位机原始数据
+    						            System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
     						        }			    	
     						    });
                 		}else{//无过滤信息，即把所有到的col全部输出
-                			ctx.writeAndFlush(Unpooled.copiedBuffer("Please input filter info",CharsetUtil.UTF_8));//请输入查询过滤器信息
+                			TCP_ServerHandler4PC.writeFlushFuture(ctx,"Please input filter info");
+//                			ctx.writeAndFlush(Unpooled.copiedBuffer("Please input filter info",CharsetUtil.UTF_8));//请输入查询过滤器信息
                 		}  
                 		break;
                 	case TCP_ServerHandler4PC.MONGODB_CREATE_COL://创建collection
@@ -331,10 +342,9 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     	//加入该通道
     	RunPcServer.getChMap().put(ctx.channel().remoteAddress().toString(), new ChannelAttributes(ctx));
     	String salt = RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getSalt();
-    	ctx.writeAndFlush(Unpooled.copiedBuffer("RandStr:"+salt,CharsetUtil.UTF_8));//发送salt
-//    	ctx.writeAndFlush(Unpooled.copiedBuffer("!!!!!!!!!!What!!!!!!",CharsetUtil.UTF_8));//发送salt
-    	System.out.println("RandStr:"+salt);//打印salt
-//    	System.out.println("Key Hash:"+Md5.getKeySaltHash("song", "123"));
+    	TCP_ServerHandler4PC.writeFlushFuture(ctx,"RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt);
+//    	ctx.writeAndFlush(Unpooled.copiedBuffer("RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt,CharsetUtil.UTF_8));//发送salt
+    	System.out.println("RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt);//打印salt
     	//发送RSA算法的n和e
 //    	ctx.writeAndFlush(Unpooled.copiedBuffer("Private key (n,e) = ("
 //    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicE().toString()+","
@@ -368,7 +378,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 		//获取该通道盐值
 		String salt = RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getSalt();
 
-		String[] splitInfo = info.split(";");
+		String[] splitInfo = info.split(TCP_ServerHandler4PC.SEG_INFO1_INFON);
 		String userStr = splitInfo[0];
 //		System.out.println("User Name from pc:"+userStr);//显示从pc获取到的用户名
 		String keyHashStr = splitInfo[1];//md5(md5(key)+salt)
@@ -412,10 +422,11 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			        	//查询操作结束后，查看是否登录成功
 	                    if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {//登录成功
 	                    	//返回登录信息
-	                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Logined\n",CharsetUtil.UTF_8));
+	                    	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_LOGIN+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
+//	                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Login"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK,CharsetUtil.UTF_8));
 	                    }
 	                    else {//登录失败，已经断开了
-	                    	writeFlushFuture(ctx,"Login error\n");
+	                    	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_LOGIN+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_ERROR);
 	                    	//删除这个通道
 	                    	RunPcServer.delCh(ctx);                    	
 	                    }
@@ -480,13 +491,30 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //		return false;	
 //	}
     /**
-     * 发送信息并等待成功
+     * 发送信息，会受到成功的信息，进而处理（不会阻塞等待）
      * @param ctx 通道ctx
      * @param msg 要发送的String信息
      */
     public static void writeFlushFuture(ChannelHandlerContext ctx,String msg) {
-    	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer("\n"+msg+"\n",CharsetUtil.UTF_8));
+    	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg,CharsetUtil.UTF_8));
     	//等待发送完毕
+    	future.addListener(new ChannelFutureListener(){
+			@Override
+			public void operationComplete(ChannelFuture f) {
+				if(!f.isSuccess()) {
+					f.cause().printStackTrace();
+				}
+			}
+		});
+    }
+    /**
+     * 发送信息并等待成功
+     * @param ctx 通道ctx
+     * @param msg 要发送的ByteBuf信息
+     */
+    public static void writeFlushFuture(ChannelHandlerContext ctx,ByteBuf msg) {
+    	ChannelFuture future = ctx.writeAndFlush(msg);
+    	//发送完毕会返回一个信息
     	future.addListener(new ChannelFutureListener(){
 			@Override
 			public void operationComplete(ChannelFuture f) {

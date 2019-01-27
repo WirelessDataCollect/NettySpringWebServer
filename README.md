@@ -144,11 +144,32 @@ PC上位机通过TCP连接服务器8081端口，实施接受经过服务器转�
 ```
 
 # 上位机和服务器的交互
-|上位机命令|信息|服务器返回|结束|
+### 信息中不可包含的字符
+"+"：用于分割命令和信息，CMD+INFO
+
+";"：用于分割INFO，将INFO(info1;info2;...)分割为多个子info
+
+":"：用于分割子info的key:value（或者大小关系）
+
+","：用于分割子info中的value(多用于分割上下界，如year:2019,2033，表示年份从2019到2033)
+
+```
+MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
+```
+
+**备注：**
+
+在java中需要转义的几个字符：
+
+```
+( [ { \ ^ - $ ** } ] ) ? * + .
+```
+### 数据库查询
+|上位机命令|信息|服务器返回|结束|说明|
 |-|-|-|-|
-|MongoFindDocsNames|none|MongoFindDocsNames:xxx|MongoFindDocsNames:Over|
+|MongoFindDocsNames|none|MongoFindDocsNames:xxx|MongoFindDocsNames:Over|查询所有的doc名称|
 |-|-|-|-|
-|MongoFindDocs|none|MongoFindDocsNames:xxx|MongoFindDocsNames:Over|
+|MongoFindDocs|none|MongoFindDocs:xxx|MongoFindDocs:Over|根据条件查询doc，并发送给上位机|
 
 ```
 eg.查询测试名称：test1_20190121，从日期8245810到8245820的数据
@@ -157,6 +178,13 @@ MongoFindDocs+test:test1_20190121;yyyy_mm_dd:8245810,8245820
 eg.查询测试名称：test1_20190121，从那一天的8245840到8245840的数据（即==8245840）
 MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ```
+### 指令
+|上位机命令|信息|服务器返回|结束|说明|
+|-|-|-|-|
+|Login|登录用户名;|MongoFindDocsNames:xxx|MongoFindDocsNames:Over|查询所有的doc名称|
+|-|-|-|-|
+|MongoFindDocs|none|MongoFindDocs:xxx|MongoFindDocs:Over|根据条件查询doc，并发送给上位机|
+
 # 参考
 
 [Netty实战精髓-w3cSchool](https://www.w3cschool.cn/essential_netty_in_action/ "Netty实战精髓-w3cSchool")
