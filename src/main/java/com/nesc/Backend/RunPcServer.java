@@ -428,7 +428,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                    else {//登录失败，已经断开了
 	                    	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_LOGIN+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_ERROR);
 	                    	//删除这个通道
-	                    	RunPcServer.delCh(ctx);                    	
+	                    	RunPcServer.delCh(ctx);   	
 	                    }
 			            System.out.println("Mongo Operate Finished!");
 			        }			    	
