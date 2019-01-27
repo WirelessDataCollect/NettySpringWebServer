@@ -144,17 +144,18 @@ PC上位机通过TCP连接服务器8081端口，实施接受经过服务器转�
 ```
 
 # 上位机和服务器的交互
-|-|-|-|
-|上位机命令|信息|服务器返回|
-|-|-|-|
-|MongoFindDocsNames|-|MongoFindDocsNames:xxx|
-|-|-|-|
-|MongoFindDocs|-|MongoFindDocsNames:xxx;|
-|-|-|-|
+|上位机命令|信息|服务器返回|结束|
+|-|-|-|-|
+|MongoFindDocsNames|none|MongoFindDocsNames:xxx|MongoFindDocsNames:Over|
+|-|-|-|-|
+|MongoFindDocs|none|MongoFindDocsNames:xxx|MongoFindDocsNames:Over|
 
 ```
 eg.查询测试名称：test1_20190121，从日期8245810到8245820的数据
 MongoFindDocs+test:test1_20190121;yyyy_mm_dd:8245810,8245820
+
+eg.查询测试名称：test1_20190121，从那一天的8245840到8245840的数据（即==8245840）
+MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ```
 # 参考
 
