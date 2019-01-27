@@ -12,19 +12,18 @@ public class TestTools implements Runnable{
 	private Thread t;//线程
 	private int packsNum;
 	private final static int SLEEP_MS = 5000;
-
+	private RunDeviceServer runDeviceServer = //获取某一个端口的数据信息
+			(RunDeviceServer) App.getApplicationContext().getBean("runDeviceServer");
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
 		while(true) {
-			
-			packsNum = RunDeviceServer.getPacksNum();  //获取packsnums
-			RunDeviceServer.resetPacksNum();  //packsnums = 0
+//			System.out.printf("Str(\"8245810\") to int test : %d \n",Integer.parseInt("8245810"));
+			packsNum = runDeviceServer.getPacksNum();  //获取packsnums
+			runDeviceServer.resetPacksNum();  //packsnums = 0
 			System.out.printf("%d Packs/5s\n",packsNum);			
-			try {//休息10s
+			try {//休息5s
 				Thread.sleep(TestTools.SLEEP_MS);//阻塞当前进程
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} 
 		}

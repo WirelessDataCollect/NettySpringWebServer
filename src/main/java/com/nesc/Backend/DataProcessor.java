@@ -34,12 +34,21 @@ public class DataProcessor {
 	
 	private int BytebufLength;
 	private short checkUbyte;
-	private short wifi_client_id;//设备的id，虽然是short，但是设备以8bits无符号传输，最大255
+	private short wifi_node_id;//设备的id，虽然是short，但是设备以8bits无符号传输，最大255
 	private long yyyy_mm_dd;//年月日
 	private long headtime;//毫秒
 	private long adc_count;//数据个数（ADC数据）
 	private short io1,io2;//io数字电平
-
+	//MongoDB的数据key
+	public final static String MONGODB_KEY_TESTNAME = "test";//本次测试的名称
+	public final static String MONGODB_KEY_NODE_ID = "wifi_node_id";//本次测试的名称
+	public final static String MONGODB_KEY_YYYYMMDD = "yyyy_mm_dd";//年月日
+	public final static String MONGODB_KEY_HEADTIME = "headtime";//每天的时间精确到1ms
+	public final static String MONGODB_KEY_ADC_COUNT_SHORT = "adc_count_short";//这里的adc_count_short表示每个channel有多少个short数据 
+	public final static String MONGODB_KEY_IO1 = "io1";//数字通道1
+	public final static String MONGODB_KEY_IO2 = "io2";//数字通道2
+	public final static String MONGODB_KEY_ADC_VAL = "adc_val";//adc的数值
+	public final static String MONGODB_KEY_RAW_DATA = "raw_data";//原始数据
 	private MyMongoDB mongodb;
 	/**
 	* 数据处理obj的构造函数
@@ -51,7 +60,6 @@ public class DataProcessor {
 	public void setMongodb(MyMongoDB myMongoDB) {
 		mongodb = myMongoDB;//这个mongodb是依赖注入的
 	}
-	
 	
 	SingleResultCallback<Void> callback;
 	/**
@@ -68,13 +76,14 @@ public class DataProcessor {
 		}
 		/*生成document*/
 		BasicDBObject bdo = getAdcVal4CH(msg,(short)(adc_count));
-		Document doc = new Document("wifi_client_id",wifi_client_id)
-				.append("yyyy_mm_dd", yyyy_mm_dd)
-				.append("headtime",headtime)
-				.append("adc_count_short",adc_count / 2 / ADC_CHANNEL_MAX)//这里的adc_count_short表示每个channel有多少个short数据 
-				.append("io1",io1)
-				.append("io2",io2)
-				.append("adc_val",bdo );
+		Document doc = new Document(DataProcessor.MONGODB_KEY_NODE_ID,wifi_node_id)//该包的节点
+				.append(DataProcessor.MONGODB_KEY_YYYYMMDD, yyyy_mm_dd)//改包的年月日
+				.append(DataProcessor.MONGODB_KEY_HEADTIME,headtime)//改包的起始时间
+				.append(DataProcessor.MONGODB_KEY_ADC_COUNT_SHORT,adc_count / 2 / ADC_CHANNEL_MAX)//ADC数据个数（16位）
+				.append(DataProcessor.MONGODB_KEY_IO1,io1)//数字通道1
+				.append(DataProcessor.MONGODB_KEY_IO2,io2)//数字通道2
+				.append(DataProcessor.MONGODB_KEY_ADC_VAL,bdo )//解析后的ADC数字量
+				.append(DataProcessor.MONGODB_KEY_RAW_DATA,msg);//原始数据
 //		System.out.println(doc);
 		/*doc存入数据库*/
 		//mongodb.insertOne已加锁
@@ -108,7 +117,7 @@ public class DataProcessor {
 	* 
 	* YYYY_MM_DD:年月日32bits[0:3], HeadTime:毫秒32bits[4:7], count:adc数据长度32bits[8:11], 
 	* 
-	* wifi_client_id:模组id8bits[12],IO:数字电平[13:14],checkUbyte:校验8bits[15]
+	* wifi_node_id:模组id8bits[12],IO:数字电平[13:14],checkUbyte:校验8bits[15]
 	*
 	* @param msg 其中的两个校验字节msg[4]和msg[15]，相等才能通过
 	* @return true：成功获取数据帧头;false:数据有问题
@@ -124,11 +133,11 @@ public class DataProcessor {
 			return false;
 		}
 		/*获取设备的id*/
-		wifi_client_id = msg.getUnsignedByte(WIFI_CLIENT_ID_IDX);
-//		System.out.println("Client Id:"+wifi_client_id);
+		wifi_node_id = msg.getUnsignedByte(WIFI_CLIENT_ID_IDX);
+//		System.out.println("Client Id:"+wifi_node_id);
 		
 		/*校验设备的id*/
-		if((wifi_client_id<0) ||(wifi_client_id>WIFI_CLIENT_ID_MAX)) {
+		if((wifi_node_id<0) ||(wifi_node_id>WIFI_CLIENT_ID_MAX)) {
 			System.out.println("id error:abandoned");
 			return false;
 		}

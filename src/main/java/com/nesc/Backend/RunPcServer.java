@@ -1,4 +1,6 @@
 package com.nesc.Backend;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,6 +10,7 @@ import org.bson.Document;
 import com.mongodb.BasicDBObject;
 import com.mongodb.Block;
 import com.mongodb.async.SingleResultCallback;
+import com.mongodb.async.client.DistinctIterable;
 import com.mongodb.async.client.FindIterable;
 import com.nesc.attributes.ChannelAttributes;
 import com.nesc.security.Md5;
@@ -174,57 +177,149 @@ public class RunPcServer implements Runnable{
 * @version 0.1.1
 */
 class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
+	//优先级高
+	private final static String MONGODB_FIND_DOCS = "MongoFindDocs";//获取mongodb中的集合名称
+	private final static String MONGODB_FIND_DOCS_NAMES = "MongoFindDocsNames";//获取mongodb中的集合名称
+	//中等优先级
 	private final static String PC_WANT_LOGIN = "Login";//登录指令
 	private final static String PC_WANT_GET_RTDATA = "GetRtdata";//获取实时数据，必须先login（进入信任区）
+	private final static String MONGODB_CREATE_COL = "MongoCreateCol";//创建一个数据集合，每次实验都要创建
+	//优先级低
 	private final static String PC_WANT_DISCONNECT = "Disconnect";//断开连接
-	private final static String PC_SET_TEST_PLACE = "SetPlace";//设置测试地点
+	private final static String HEART_BEAT_SIGNAL = "HeartBeat";//心跳包
+
 //	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
 	
-    @Override
+    @SuppressWarnings("null")
+	@Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    	
         try {
         	//转化为string
         	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
+            //输出信息
+            System.out.println("Recv from PC:"+message);
         	String[] splitMsg = message.split("\\+");//将CMD和info分成两段
         	String cmd = splitMsg[0];
-            //返回信息
-            System.out.println("Recv from PC:"+message);
-            //判断cmd类型
-            switch(cmd) {
-            	
-            	case TCP_ServerHandler4PC.PC_WANT_LOGIN://PC想要登录
-            		String info = splitMsg[1];
-            		//当前状态时请求连接状态而且用户名和密码匹配成功
-            		loginMd5(ctx,info);
+        	System.out.println("SplitMsg Len: "+String.valueOf(splitMsg.length));//输出获取到的信息长度
+        	//判断当前上位机状态（未登录、已登录等）
+        	//TODO 将REQUEST_CONNECT_STA改回来
+        	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//已经登录
+        		//获取存放测试数据的数据库
+        		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
+                //判断cmd类型
+                switch(cmd) {
+                	case TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES://获取所有的doc的test名称
+	                	DistinctIterable<String> disIter = mongodb.collection.distinct(DataProcessor.MONGODB_KEY_TESTNAME, String.class);
+	                	disIter.forEach(new Block<String>() {
+	    					@Override
+	    					public void apply(String name) {
+	    						System.out.printf("\nGet One doc name:%s\n",name);
+	    						//TODO 后期考虑是否全部缓存再flush
+	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+name+"\n",CharsetUtil.UTF_8));//放到Netty缓存区中，最后在SingleResultCallback中发送
+	    					}
+	                	},  new SingleResultCallback<Void>() {
+	    					@Override
+	    					public void onResult(Void result, Throwable t) {
+	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+"Over",CharsetUtil.UTF_8));//发给上位机doc名全部发送完毕
+	    						System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+"Over");
+	    					}	
+	                	});
+	                	break;
+                	case TCP_ServerHandler4PC.MONGODB_FIND_DOCS://获取MongoDB中的文档信息，可以使用filter
+                		//TODO  to test
+                		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
+                			//splitMsg[1]格式    |key:info;key:info;......|
+                			String[] filtersStr = splitMsg[1].split(";");//将信息划分为多个filters
+                			System.out.println("filterStr:"+filtersStr[0]);
+                 			//filter
+                			BasicDBObject filter = new BasicDBObject();
+                 			//缓存filter的上下界
+                 			int lowerBound=0;int upperBound=0;
+                 			for(String filterStr:filtersStr) {//将过滤信息都put到filter中
+                 				String[] oneFilter = filterStr.split(":",2);//eg.{test:test1_201901251324}
 
-                    break;
-            	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA:
-            		if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {
-            			System.out.println("Request RTDATA!But Have Not Programs This Func!");
-            		}
-            		else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
-            			System.out.println("Have Not Login!");
-            		}
-            		else if (RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.DATA_GET_STA) {
-            			System.out.println("This Ch In Getting Rtdata Status!");
-            		}
-            		break;
-            	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT:
-            		RunPcServer.delCh(ctx);
-            		break;
-            	case TCP_ServerHandler4PC.PC_SET_TEST_PLACE:
-            		//TODO 设置测试地点，不能和其他的测试地点重复
-            		break;
-            	default:
-            		System.out.println("Cmd Unkown!");
-            		break;
-            }            
-        } finally {
+                 				switch(oneFilter[0]) {
+    	             				case DataProcessor.MONGODB_KEY_TESTNAME://过滤测试名称，test:xxxxx
+    	             					filter.put(oneFilter[0], oneFilter[1]);
+    	             					break;
+    	             				case DataProcessor.MONGODB_KEY_YYYYMMDD://过滤年月日,yyyy_mm_dd:xxxxxx
+    	             					lowerBound = Integer.parseInt((oneFilter[1].split(","))[0]);//小的日期
+    	             					upperBound = Integer.parseInt((oneFilter[1].split(","))[1]);//大的日期
+    	             					filter.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
+    	             					break;
+    	             				case DataProcessor.MONGODB_KEY_HEADTIME://过滤每一天中的ms,headtime:xxxxxx
+    	             					lowerBound= Integer.parseInt((oneFilter[1].split(","))[0]);//小的时间/ms
+    	             					upperBound = Integer.parseInt((oneFilter[1].split(","))[1]);//大的时间/ms
+    	             					filter.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
+    	             					break;
+    	             				default:
+    	             					break;
+    	             				}//end of case
+                 			}//end of for
+                 			FindIterable<Document> docIter = mongodb.collection.find(filter) ;
+                 			docIter.forEach(new Block<Document>() {
+    						    @Override
+    						    public void apply(final Document document) {//每个doc所做的操作
+//    						    	ctx.writeAndFlush(Unpooled.copiedBuffer((String)document.get("raw_data"),CharsetUtil.UTF_8));//发给上位机原始数据
+    						    	ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
+//    						    	ctx.writeAndFlush((ByteBuf)document.get("raw_data"));//发给上位机原始数据
+    						    	ctx.writeAndFlush(Unpooled.copiedBuffer((String)document.get("raw_data"),CharsetUtil.UTF_8));//发给上位机原始数据
+    						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
+    						        @Override
+    						        public void onResult(final Void result, final Throwable t) {
+    						        	//TODO
+    						        	ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over",CharsetUtil.UTF_8));//发给上位机原始数据
+    						            System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over");
+    						        }			    	
+    						    });
+                		}else{//无过滤信息，即把所有到的col全部输出
+                			ctx.writeAndFlush(Unpooled.copiedBuffer("Please input filter info",CharsetUtil.UTF_8));//请输入查询过滤器信息
+                		}  
+                		break;
+                	case TCP_ServerHandler4PC.MONGODB_CREATE_COL://创建collection
+                		//TODO  
+                		break;
+
+                	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA:
+                		//TODO
+                		if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {
+                			System.out.println("Request RTDATA!But Have Not Programs This Func!");
+                		}
+                		else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
+                			System.out.println("Have Not Login!");
+                		}
+                		break;
+                	case TCP_ServerHandler4PC.HEART_BEAT_SIGNAL://心跳包
+                		//TODO 每次更新心跳包的时间，过一段时间检查是否超过时间
+                		break;
+                	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT://上位机想要断开连接
+                		RunPcServer.delCh(ctx);
+                		break;
+                	default:
+                		System.out.println("Cmd Unkown!");
+                		break;
+                }  
+        	} 
+        	else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//连接但还未登录
+        		switch(cmd) {
+	            	case TCP_ServerHandler4PC.PC_WANT_LOGIN://PC想要登录
+	            		String info = splitMsg[1];
+	            		//当前状态时请求连接状态而且用户名和密码匹配成功
+	            		loginMd5(ctx,info);
+	                    break;
+	            	default:
+	            		break;
+        		}
+        	}
+        } 
+        catch(Exception e) {
+        	e.printStackTrace();
+        }
+        finally {
             // 抛弃收到的数据
             ReferenceCountUtil.release(msg);//如果不是继承的SimpleChannel...则需要自行释放msg
         }
-    }
+    }//end of channelRead
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
     	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
@@ -246,7 +341,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicN().toString()+")"
 //    			+"\n", CharsetUtil.UTF_8));
         ctx.fireChannelActive();
-    }
+    }//end of channelActive
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		RunPcServer.delCh(ctx);
@@ -260,9 +355,9 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         ctx.close();
     }
 	/**
-	 * 登录管理员Md5加密，验证通过则链接
+	 * 登录管理员Md5加密
 	 * 
-	 * 验证不通过也不断开
+	 * 验证通过则将该上位机放到新人驱，如果没有通过则直接断开。
      * info
 	 * |---------;---------|
 	 *    user     keyHash

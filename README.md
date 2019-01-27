@@ -143,7 +143,19 @@ PC上位机通过TCP连接服务器8081端口，实施接受经过服务器转�
 }
 ```
 
+# 上位机和服务器的交互
+|-|-|-|
+|上位机命令|信息|服务器返回|
+|-|-|-|
+|MongoFindDocsNames|-|MongoFindDocsNames:xxx|
+|-|-|-|
+|MongoFindDocs|-|MongoFindDocsNames:xxx;|
+|-|-|-|
 
+```
+eg.查询测试名称：test1_20190121，从日期8245810到8245820的数据
+MongoFindDocs+test:test1_20190121;yyyy_mm_dd:8245810,8245820
+```
 # 参考
 
 [Netty实战精髓-w3cSchool](https://www.w3cschool.cn/essential_netty_in_action/ "Netty实战精髓-w3cSchool")

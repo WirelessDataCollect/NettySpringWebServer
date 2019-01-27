@@ -25,6 +25,7 @@ import com.mongodb.async.client.MongoDatabase;
 */
 public class MyMongoDB{
 	public MongoCollection<Document> collection;
+	
 	protected MongoClient mongoClient;
 	protected MongoDatabase mongoDatabase;
 	private String colName;

@@ -27,7 +27,7 @@ public class RunDeviceServer implements Runnable{
 	private int listenPort = 5001;
 	private Thread t;
 	private String threadName = "Device-Thread";
-	private volatile static int packsNum = 0;
+	private volatile int packsNum = 0;
 	/**
 	 * 设置连接设备的端口。bean的set方法，bean会自动调用
 	 * 
@@ -57,24 +57,24 @@ public class RunDeviceServer implements Runnable{
 	*
 	* @throws none
 	*/	
-	public static void resetPacksNum() {
-		packsNum = 0;
+	public void resetPacksNum() {
+		this.packsNum = 0;
 	}
 	/**
 	* 增加packsNum1s。
 	*
 	* @throws none
 	*/	
-	public static void incPacksNum() {
-		packsNum ++;
+	public void incPacksNum() {
+		this.packsNum ++;
 	}	
 	/**
 	* 获取packsNum的数值。
 	*
 	* @throws none
 	*/	
-	public static int getPacksNum() {
-		return packsNum;
+	public int getPacksNum() {
+		return this.packsNum;
 	}	
 	/**
 	* 获取UDP还是TCP协议，获取端口号。
