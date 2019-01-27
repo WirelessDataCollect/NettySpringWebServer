@@ -300,14 +300,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 			System.out.println("Have Not Login!");
                 		}
                 		break;
-                	case TCP_ServerHandler4PC.HEART_BEAT_SIGNAL://心跳包
-                		//TODO 每次更新心跳包的时间，过一段时间检查是否超过时间
-                		break;
-                	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT://上位机想要断开连接
-                		RunPcServer.delCh(ctx);
-                		break;
                 	default:
-                		System.out.println("Cmd Unkown!");
                 		break;
                 }  
         	} 
@@ -321,6 +314,17 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	            	default:
 	            		break;
         		}
+        	}//end of if elif
+        	//不管登录与否，都要处理的命令
+        	switch(cmd) {
+	        	case TCP_ServerHandler4PC.HEART_BEAT_SIGNAL://心跳包
+	        		//TODO 每次更新心跳包的时间，过一段时间检查是否超过时间
+	        		break;
+	        	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT://上位机想要断开连接
+	        		RunPcServer.delCh(ctx);
+	        		break;
+	        	default:
+	        		break;
         	}
         } 
         catch(Exception e) {
