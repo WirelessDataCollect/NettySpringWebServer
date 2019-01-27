@@ -187,6 +187,13 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 |-|-|-|-|
 |Disconnect|none|Disconnect:OK|断开连接|
 
+# 数据库操作
+
+```
+eg.
+db.data.insert({test:"test1_20190121",wifi_client_id:0,yyyy_mm_dd:8245810,headtime:8245850,adc_count_short:2,io1:0,io2:0,adc_val:{ch1:[2676,2726],ch2:[2676,2726],ch3:[2676,2726],ch4:[2676,2726]},raw_data:"rllllaw datasslklks"})
+```
+
 # 参考
 
 [Netty实战精髓-w3cSchool](https://www.w3cschool.cn/essential_netty_in_action/ "Netty实战精髓-w3cSchool")
