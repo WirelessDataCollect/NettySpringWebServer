@@ -1,9 +1,9 @@
-package com.nesc.Backend;
+package com.sorl.backend;
 
 import java.util.Iterator;
 import java.util.Map;
 
-import com.nesc.attributes.ChannelAttributes;
+import com.sorl.attributes.ChannelAttributes;
 
 import io.netty.buffer.ByteBuf;
 

@@ -1,9 +1,9 @@
-package com.nesc.Frontend;
+package com.sorl.frontend;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import com.nesc.Backend.App;
+import com.sorl.backend.App;
 
 public class AutoRun implements ServletContextListener{
 	/**

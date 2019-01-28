@@ -1,4 +1,4 @@
-package com.nesc.security;
+package com.sorl.security;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

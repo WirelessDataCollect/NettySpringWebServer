@@ -11,29 +11,29 @@
 
 	<context:annotation-config/>  <!-- 基于注解的配置 -->
 	
-   <bean id="runPcServer" class="com.nesc.Backend.RunPcServer">
+   <bean id="runPcServer" class="com.sorl.backend.RunPcServer">
        <property name="threadName" value="PC-Thread"/>
        <property name="listenPort" value="8089"/>
        <property name="infoDb" ref="infoMongoDB"/>
    </bean>
    <!-- mongodb存储管理员信息的cols -->
-   <bean id="infoMongoDB" class="com.nesc.Backend.MyMongoDB"
+   <bean id="infoMongoDB" class="com.sorl.backend.MyMongoDB"
    		init-method="init" destroy-method="destroy">  
    		<property name="dbName" value="data"/>
    		<property name="colName" value="admin"/>
    </bean> 
 
-   <bean id="runDeviceServer" class="com.nesc.Backend.RunDeviceServer">
+   <bean id="runDeviceServer" class="com.sorl.backend.RunDeviceServer">
        <property name="protocol" value="UDP"/>
        <property name="listenPort" value="5001"/>
        <property name="threadName" value="Device-Thread"/>
    </bean>
 
    <!-- 用于依赖注入 -->   
-   <bean id="dataProcessor" class="com.nesc.Backend.DataProcessor">
+   <bean id="dataProcessor" class="com.sorl.backend.DataProcessor">
    		<property name="mongodb" ref="myMongoDB"/>
    </bean>
-   <bean id="myMongoDB" class="com.nesc.Backend.MyMongoDB"
+   <bean id="myMongoDB" class="com.sorl.backend.MyMongoDB"
    		init-method="init" destroy-method="destroy">  <!-- 这一段写在dataProcessor的property内部也可以，即注入内部Bean -->
    		<property name="dbName" value="udp"/>
    		<property name="colName" value="data"/>

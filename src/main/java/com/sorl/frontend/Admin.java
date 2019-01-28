@@ -1,4 +1,4 @@
-package com.nesc.Frontend;
+package com.sorl.frontend;
 
 public class Admin {
    private String name;

@@ -6,7 +6,7 @@
 
     <display-name>NescTech Web</display-name>
 	<listener>  
-    <listener-class>com.nesc.Frontend.AutoRun</listener-class>
+    <listener-class>com.sorl.frontend.AutoRun</listener-class>
 	</listener>  
 	
     <servlet>

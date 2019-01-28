@@ -1,5 +1,5 @@
-package com.nesc.attributes;
-import com.nesc.security.Md5;
+package com.sorl.attributes;
+import com.sorl.security.Md5;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
