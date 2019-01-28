@@ -181,6 +181,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	//中等优先级
 	private final static String PC_WANT_LOGIN = "Login";//登录指令
 	private final static String PC_WANT_GET_RTDATA = "GetRtdata";//获取实时数据，必须先login（进入信任区）
+	private final static String PC_STOP_GET_RTDATA = "StopGetRtdata";//停止获取实时数据
 	private final static String MONGODB_CREATE_COL = "MongoCreateCol";//创建一个数据集合，每次实验都要创建
 	//优先级低
 	private final static String PC_WANT_DISCONNECT = "Disconnect";//断开连接
@@ -208,8 +209,16 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	String cmd = splitMsg[0];
 //        	System.out.println("SplitMsg Len: "+String.valueOf(splitMsg.length));//输出获取到的信息长度
         	//判断当前上位机状态（未登录、已登录等）
-        	//TODO 将REQUEST_CONNECT_STA改回来
-        	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//已经登录
+        	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.DATA_GET_STA) {//实时接收数据的时候不能进行其他操作
+        		switch(cmd) {
+        			case TCP_ServerHandler4PC.PC_STOP_GET_RTDATA://降级为登录状态
+        				RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.LOGINED_STA);
+        				break;
+        			default:
+        				break;
+        		}
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//已经登录
+        		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
                 //判断cmd类型
@@ -288,23 +297,15 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 		}  
                 		break;
                 	case TCP_ServerHandler4PC.MONGODB_CREATE_COL://创建collection
-                		//TODO  
-                		break;
-
-                	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA:
                 		//TODO
-                		if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {
-                			System.out.println("Request RTDATA!But Have Not Programs This Func!");
-                		}
-                		else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
-                			System.out.println("Have Not Login!");
-                		}
+                		break;
+                	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA://修改位GetRtData的状态
+                		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.DATA_GET_STA);
                 		break;
                 	default:
                 		break;
                 }  
-        	} 
-        	else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//连接但还未登录
+        	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//连接但还未登录
         		switch(cmd) {
 	            	case TCP_ServerHandler4PC.PC_WANT_LOGIN://PC想要登录
 	            		String info = splitMsg[1];
@@ -319,6 +320,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	switch(cmd) {
 	        	case TCP_ServerHandler4PC.HEART_BEAT_SIGNAL://心跳包
 	        		//TODO 每次更新心跳包的时间，过一段时间检查是否超过时间
+	        		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.HEART_BEAT_SIGNAL+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
 	        		break;
 	        	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT://上位机想要断开连接
 	        		RunPcServer.delCh(ctx);

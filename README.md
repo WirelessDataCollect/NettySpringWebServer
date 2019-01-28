@@ -167,9 +167,9 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ### 数据库查询
 |上位机命令|信息|服务器返回|结束|说明|
 |-|-|-|-|-|
-|MongoFindDocsNames|none|MongoFindDocsNames\:xxx|MongoFindDocsNames\:Over|查询所有的doc名称|
+|MongoFindDocsNames|none|MongoFindDocsNames\:xxx|MongoFindDocsNames\:OVER|查询所有的doc名称|
 |-|-|-|-|-|
-|MongoFindDocs|none|MongoFindDocs\:xxx|MongoFindDocs\:Over|根据条件查询doc，并发送给上位机|
+|MongoFindDocs|none|MongoFindDocs\:xxx|MongoFindDocs\:OVER|根据条件查询doc，并发送给上位机|
 
 ```
 eg.查询测试名称：test1_20190121，从日期8245810到8245820的数据
