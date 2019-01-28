@@ -167,8 +167,8 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ### 数据库查询
 |上位机命令|信息|服务器返回|结束|说明|
 |-|-|-|-|-|
-|MONGODB_FIND_DOCS_NAMES = "MongoFindDocsNames"|none|MongoFindDocsNames\:xxx|MongoFindDocsNames\:OVER|查询所有的doc名称|
-|MONGODB_FIND_DOCS = "MongoFindDocs"|none|MongoFindDocs\:xxx|MongoFindDocs\:OVER|根据条件查询doc，并发送给上位机|
+|MONGODB_FIND_DOCS_NAMES = "MongoFindDocsNames"|none|MongoFindDocsNames:xxx|MongoFindDocsNames:OVER|查询所有的doc名称|
+|MONGODB_FIND_DOCS = "MongoFindDocs"|none|MongoFindDocs:xxx|MongoFindDocs:OVER|根据条件查询doc，并发送给上位机|
 
 ```
 eg.查询测试名称：test1_20190121，从日期8245810到8245820的数据
@@ -180,11 +180,11 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ### 指令
 |上位机命令|信息|服务器返回|说明|
 |-|-|-|-|
-|PC_WANT_LOGIN = "Login"|登录用户名;MD5加密数据|Login:OK|登录用户|
-|PC_WANT_GET_RTDATA = "GetRtdata"|登录用户名;MD5加密数据|Login:OK|登录用户|
-|PC_STOP_GET_RTDATA = "StopGetRtdata"|登录用户名;MD5加密数据|Login:OK|登录用户|
-|HEART_BEAT_SIGNAL = "HeartBeat"|none|HeartBeat:OK|心跳包|
-|PC_WANT_DISCONNECT = "Disconnect"|none|Disconnect:OK|断开连接|
+|Login|登录用户名;MD5加密数据|Login:OK|登录用户|
+|GetRtdata|none|GetRtdata:OK|获取实时数据|
+|StopGetRtdata|none|StopGetRtdata:OK|停止获取实时数据|
+|HeartBeat|none|HeartBeat:GET|心跳包|
+|Disconnect|none|Disconnect:OK|断开连接|
 
 # 数据库操作
 

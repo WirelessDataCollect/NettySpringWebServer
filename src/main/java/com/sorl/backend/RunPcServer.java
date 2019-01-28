@@ -195,9 +195,10 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
 	//给某个命令的返回信息
 	private final static String DONE_SIGNAL_OK = "OK";//成功
+	private final static String SIGNAL_GET = "GET";//表示收到信息
 	private final static String DONE_SIGNAL_OVER = "OVER";//结束，一般用于，数据发送
 	private final static String DONE_SIGNAL_ERROR = "ERROR";//失败
-	private final static String SEG_CMD_DONE_SIGNAL = SEG_KEY_VALUE;//分割Key:Value,如Login:OK，登录成功
+	private final static String SEG_CMD_DONE_SIGNAL = SEG_KEY_VALUE;//分割Key:Value,如Login:OK，登录成功。如MongoFindDocs:rllllaw
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
@@ -212,6 +213,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.DATA_GET_STA) {//实时接收数据的时候不能进行其他操作
         		switch(cmd) {
         			case TCP_ServerHandler4PC.PC_STOP_GET_RTDATA://降级为登录状态
+        				TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_STOP_GET_RTDATA+
+        						TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);//发送完毕收到一个通知
         				RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.LOGINED_STA);
         				break;
         			default:
@@ -231,13 +234,15 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	    						System.out.printf("\nGet One doc name:%s\n",name);
 	    						//TODO 后期考虑是否全部缓存再flush
 	    						//放到Netty缓存区中，最后在SingleResultCallback中发送
-	    						TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+name+"\n");//发送完毕收到一个通知
+	    						TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
+	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+name);//发送完毕收到一个通知
 //	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+name+"\n",CharsetUtil.UTF_8));
 	    					}
 	                	},  new SingleResultCallback<Void>() {
 	    					@Override
 	    					public void onResult(Void result, Throwable t) {
-	    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+	    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
+	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
 //	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+"Over",CharsetUtil.UTF_8));//发给上位机doc名全部发送完毕
 	    						System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);	    						
 	    					}	
@@ -286,7 +291,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     						        @Override
     						        public void onResult(final Void result, final Throwable t) {
     						        	//TODO
-    						        	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+    						        	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS+
+    						        			TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
 //    						        	ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over",CharsetUtil.UTF_8));//发给上位机原始数据
     						            System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
     						        }			    	
@@ -301,6 +307,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 		break;
                 	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA://修改位GetRtData的状态
                 		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.DATA_GET_STA);
+                		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_GET_RTDATA+
+                				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
                 		break;
                 	default:
                 		break;
@@ -320,9 +328,12 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	switch(cmd) {
 	        	case TCP_ServerHandler4PC.HEART_BEAT_SIGNAL://心跳包
 	        		//TODO 每次更新心跳包的时间，过一段时间检查是否超过时间
-	        		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.HEART_BEAT_SIGNAL+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
+	        		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.HEART_BEAT_SIGNAL+
+	        				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.SIGNAL_GET);
 	        		break;
 	        	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT://上位机想要断开连接
+	        		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_DISCONNECT+
+	        				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
 	        		RunPcServer.delCh(ctx);
 	        		break;
 	        	default:
