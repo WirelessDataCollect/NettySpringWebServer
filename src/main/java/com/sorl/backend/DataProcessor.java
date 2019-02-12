@@ -8,6 +8,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.async.SingleResultCallback;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 /**
 * 
@@ -22,7 +23,9 @@ public class DataProcessor {
 	private final int  WIFI_CLIENT_ID_MAX= 50;//模组id最大不超过
 	private final byte  ADC_CHANNEL_MAX= 4;//adc数据通道最多不超过
 	private final short ADC_BYTES_NUM = 2*ADC_CHANNEL_MAX;//ADC一个周期所占的bytes
-	private final byte HEAD_FRAME_LENGTH = 16;//一帧的头的长度，包括yyyy_mm_dd、headtime、adc_count等
+	private final static byte MAX_TEST_NAME = 32;//测试名称长度
+	private final static byte PACKAGE_TIME_IO_LENGTH = 16;//时间、IO、id这些数据的长度
+	private final static byte HEAD_FRAME_LENGTH = MAX_TEST_NAME + PACKAGE_TIME_IO_LENGTH;//一帧的头的长度，包括测试名称、yyyy_mm_dd、headtime、adc_count等
 	private final short CHECK_UBYTE = 15;//校验开始的位置，和headtime的低八位相等
 	
 	private final int WIFI_CLIENT_ID_IDX = 12;//这里保存wifi模组的id的下标
@@ -31,6 +34,7 @@ public class DataProcessor {
 	private final int ADC_COUNT_START_IDX = 8;//adc数据量开始的下标
 	private final int IO1_IDX = 13;
 	private final int IO2_IDX = 14;
+	private final int TEST_NAME_IDX = PACKAGE_TIME_IO_LENGTH;//紧接着time io等
 	
 	private int BytebufLength;
 	private short checkUbyte;
@@ -39,6 +43,7 @@ public class DataProcessor {
 	private long headtime;//毫秒
 	private long adc_count;//数据个数（ADC数据）
 	private short io1,io2;//io数字电平
+	private String testName;//测试名称
 	//MongoDB的数据key
 	public final static String MONGODB_KEY_TESTNAME = "test";//本次测试的名称
 	public final static String MONGODB_KEY_NODE_ID = "wifi_node_id";//本次测试的名称
@@ -82,6 +87,7 @@ public class DataProcessor {
 				.append(DataProcessor.MONGODB_KEY_ADC_COUNT_SHORT,adc_count / 2 / ADC_CHANNEL_MAX)//ADC数据个数（16位）
 				.append(DataProcessor.MONGODB_KEY_IO1,io1)//数字通道1
 				.append(DataProcessor.MONGODB_KEY_IO2,io2)//数字通道2
+				.append(DataProcessor.MONGODB_KEY_TESTNAME,testName)//测试名称
 				.append(DataProcessor.MONGODB_KEY_ADC_VAL,bdo )//解析后的ADC数字量
 				.append(DataProcessor.MONGODB_KEY_RAW_DATA,msg);//原始数据
 //		System.out.println(doc);
@@ -175,6 +181,11 @@ public class DataProcessor {
 		/*获取io电平*/
 		io1 = msg.getUnsignedByte(IO1_IDX);
 		io2 = msg.getUnsignedByte(IO2_IDX);		
+		
+		/*获取测试名称*/
+		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
+		msg.getBytes(TEST_NAME_IDX,testNameTemp);
+		this.testName = new String(testNameTemp.array());
 //		System.out.printf("io1:%d  io2:%d\n",io1,io2);
 		return true;
 	}	
