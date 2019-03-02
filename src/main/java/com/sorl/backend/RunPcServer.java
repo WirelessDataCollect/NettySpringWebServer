@@ -208,7 +208,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
             System.out.println("Recv from PC:"+message);
         	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO);//将CMD和info分成两段
         	String cmd = splitMsg[0];
-//        	System.out.println("SplitMsg Len: "+String.valueOf(splitMsg.length));//输出获取到的信息长度
+        	System.out.println("Cmd : "+ cmd);
+        	System.out.println("SplitMsg Len: "+String.valueOf(splitMsg.length));//输出获取到的信息长度
         	//判断当前上位机状态（未登录、已登录等）
         	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.DATA_GET_STA) {//实时接收数据的时候不能进行其他操作
         		switch(cmd) {
@@ -220,7 +221,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			default:
         				break;
         		}
-         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//已经登录
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {//已经登录
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -286,7 +287,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //    						    	ctx.writeAndFlush(Unpooled.copiedBuffer((String)document.get("raw_data"),CharsetUtil.UTF_8));//发给上位机原始数据
     						    	ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
 //    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,(ByteBuf)document.get(DataProcessor.MONGODB_KEY_RAW_DATA));//发给上位机原始数据
-    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,(String)document.get(DataProcessor.MONGODB_KEY_RAW_DATA));
+    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,(ByteBuf)document.get(DataProcessor.MONGODB_KEY_RAW_DATA));
     						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
     						        @Override
     						        public void onResult(final Void result, final Throwable t) {
@@ -317,6 +318,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         		switch(cmd) {
 	            	case TCP_ServerHandler4PC.PC_WANT_LOGIN://PC想要登录
 	            		String info = splitMsg[1];
+	            		System.out.println("Info : "+info);
 	            		//当前状态时请求连接状态而且用户名和密码匹配成功
 	            		loginMd5(ctx,info);
 	                    break;
@@ -416,9 +418,9 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			    	//计算得到keyHash
 			    	String keyHashStrLocal = Md5.getKeySaltHash(key, salt);
 			    	//打印出收到的keyHash和本地计算出来的keyHash
-//			    	System.out.println("Key Hash Remot:"+keyHashStr);
-//			    	System.out.println("Key Hash Local:"+keyHashStrLocal);
-			    	if(keyHashStrLocal.equals(keyHashStr)){
+			    	System.out.println("Key Hash Remot:"+keyHashStr);
+			    	System.out.println("Key Hash Local:"+keyHashStrLocal);
+			    	if(keyHashStrLocal.toUpperCase().equals(keyHashStr.toUpperCase())){
 			    		System.out.println("Key Correct!");
                     	//如果当前状态是请求连接状态，才可以进行下一步
                     	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {

@@ -20,7 +20,7 @@ public class Md5 {
 		return RandomStringUtils.randomAlphanumeric(20);
 	}
 	/**
-	 * 获取加密后的信息摘要
+	 * 获取加密后的信息摘要，默认大写
 	 * @return {@link String}
 	 */
     public static String getKeySaltHash(String userKey,String salt) {
@@ -45,7 +45,7 @@ public class Md5 {
                 sb.append(String.format("%02x", b & 0xff));
             }     
             digest = sb.toString();            
-            System.out.println(digest);
+//            System.out.println("Key+salt:"+digest);
 //            String keyHashCatSalt = userKeyHash.toString().concat(salt);//把salt接到后面
             byte[] hash = md.digest(cat);
             //converting byte array to Hexadecimal String
@@ -61,6 +61,6 @@ public class Md5 {
         }catch (UnsupportedEncodingException e) {
         	e.printStackTrace();
         }
-        return digest;
+        return digest.toUpperCase();
     }
 }
