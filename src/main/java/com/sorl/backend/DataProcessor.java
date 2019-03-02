@@ -120,7 +120,7 @@ public class DataProcessor {
 		try{
 			mongodb.insertOne(doc, new SingleResultCallback<Void>() {
 			    public void onResult(final Void result, final Throwable t) {
-			    		System.out.println("Document inserted!");
+//			    		System.out.println("Document inserted!");
 			    }});			
 		}catch(Exception e) {
 			System.err.println(e);
@@ -164,7 +164,7 @@ public class DataProcessor {
 		}
 		/*获取设备的id*/
 		nodeId = msg.getUnsignedByte(WIFI_CLIENT_ID_IDX);
-		System.out.println("Node Id:"+nodeId);
+//		System.out.println("Node Id:"+nodeId);
 		
 		/*校验设备的id*/
 		if((nodeId<0) ||(nodeId>WIFI_CLIENT_ID_MAX)) {
@@ -204,16 +204,17 @@ public class DataProcessor {
 				System.out.println("Count Error : Abandoned");
 			return false;
 		}
-		System.out.println("Adc Data Len : "+adc_count);
+//		System.out.println("Adc Data Len : "+adc_count);
 		/*获取io电平*/
 		io1 = msg.getUnsignedByte(IO1_IDX);
 		io2 = msg.getUnsignedByte(IO2_IDX);		
-		System.out.printf("Io1 : %d  Io2 : %d\n",io1,io2);		
+//		System.out.printf("Io1 : %d  Io2 : %d\n",io1,io2);		
 		/*获取测试名称*/
 		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
 		msg.getBytes(TEST_NAME_IDX,testNameTemp);
 		this.testName = new String(testNameTemp.array());
-		System.out.printf("Test Name : \"%s\"",this.testName);
+		testName = testName.trim();//将最后的空字符去掉
+//		System.out.printf("Test Name : \"%s\" ",this.testName);
 		return true;
 	}	
 
@@ -236,14 +237,14 @@ public class DataProcessor {
 		BasicDBList ch4 = new BasicDBList();
 		for(int idx = 0,idx_start; idx<adc_count_short ; idx++) {
 			idx_start = idx * 8 + HEAD_FRAME_LENGTH;
-			ch1.add((short)( (msg.getUnsignedByte(idx_start)<<4) | 
-							(msg.getUnsignedByte(idx_start + 1)>>4) ));
-			ch2.add((short)( (msg.getUnsignedByte(idx_start + 2)<<4) |   
-							(msg.getUnsignedByte(idx_start + 3)>>4) ));
-			ch3.add((short)( (msg.getUnsignedByte(idx_start + 4)<<4) | 
-							(msg.getUnsignedByte(idx_start + 5)>>4) ));
-			ch4.add((short)( (msg.getUnsignedByte(idx_start + 6)<<4) | 
-							(msg.getUnsignedByte(idx_start + 7)>>4) ));
+			ch1.add((short)( (msg.getUnsignedByte(idx_start)<<8) | 
+							(msg.getUnsignedByte(idx_start + 1)) ));
+			ch2.add((short)( (msg.getUnsignedByte(idx_start + 2)<<8) |   
+							(msg.getUnsignedByte(idx_start + 3)) ));
+			ch3.add((short)( (msg.getUnsignedByte(idx_start + 4)<<8) | 
+							(msg.getUnsignedByte(idx_start + 5)) ));
+			ch4.add((short)( (msg.getUnsignedByte(idx_start + 6)<<8) | 
+							(msg.getUnsignedByte(idx_start + 7)) ));
 		}
 		return (new BasicDBObject()).append("ch1", ch1).append("ch2", ch2).append("ch3", ch3).append("ch4", ch4);
 	}
