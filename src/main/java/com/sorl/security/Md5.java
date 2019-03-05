@@ -43,7 +43,7 @@ public class Md5 {
             StringBuilder sb = new StringBuilder(2 * cat.length);
             for (byte b : cat) {
                 sb.append(String.format("%02x", b & 0xff));
-            }     
+            }
             digest = sb.toString();            
 //            System.out.println("Key+salt:"+digest);
 //            String keyHashCatSalt = userKeyHash.toString().concat(salt);//把salt接到后面

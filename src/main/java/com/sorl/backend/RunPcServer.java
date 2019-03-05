@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bson.Document;
+import org.bson.types.*;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.Block;
@@ -221,7 +222,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			default:
         				break;
         		}
-         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {//已经登录
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//LOGINED_STA) {//已经登录
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -284,10 +285,12 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                  			docIter.forEach(new Block<Document>() {
     						    @Override
     						    public void apply(final Document document) {//每个doc所做的操作
-//    						    	ctx.writeAndFlush(Unpooled.copiedBuffer((String)document.get("raw_data"),CharsetUtil.UTF_8));//发给上位机原始数据
     						    	ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
-//    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,(ByteBuf)document.get(DataProcessor.MONGODB_KEY_RAW_DATA));//发给上位机原始数据
-    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,(ByteBuf)document.get(DataProcessor.MONGODB_KEY_RAW_DATA));
+    						    	Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA); 
+    						    	byte[] rawDataByte = rawDataBin.getData();
+    						    	ByteBuf rawDataEncoded = ctx.alloc().buffer(4 * rawDataByte.length);//分配空间
+    						    	rawDataEncoded.writeBytes(rawDataByte);
+    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,rawDataEncoded);//发给上位机原始数据
     						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
     						        @Override
     						        public void onResult(final Void result, final Throwable t) {
@@ -352,6 +355,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     }//end of channelRead
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		//设置消息队列流量水位，不能太多，否则会造成积压
+		ctx.channel().config().setWriteBufferHighWaterMark(50 * 1024 * 1024);//50MB
     	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
     	//通道数太多了
     	if(RunPcServer.getChMap().size()>ChannelAttributes.MAX_CHANNEL_NUM) {
@@ -515,16 +520,20 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
      * @param msg 要发送的String信息
      */
     public static void writeFlushFuture(ChannelHandlerContext ctx,String msg) {
-    	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg,CharsetUtil.UTF_8));
-    	//等待发送完毕
-    	future.addListener(new ChannelFutureListener(){
-			@Override
-			public void operationComplete(ChannelFuture f) {
-				if(!f.isSuccess()) {
-					f.cause().printStackTrace();
-				}
-			}
-		});
+    	//如果这个channel没有到达水位的话，还可以写入
+    	//水位在active时设置
+    	if(ctx.channel().isWritable()) {
+        	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg,CharsetUtil.UTF_8));
+        	//等待发送完毕
+        	future.addListener(new ChannelFutureListener(){
+    			@Override
+    			public void operationComplete(ChannelFuture f) {
+    				if(!f.isSuccess()) {
+    					f.cause().printStackTrace();
+    				}
+    			}
+    		});    		
+    	}
     }
     /**
      * 发送信息并等待成功
@@ -532,16 +541,20 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
      * @param msg 要发送的ByteBuf信息
      */
     public static void writeFlushFuture(ChannelHandlerContext ctx,ByteBuf msg) {
+    	//如果这个channel没有到达水位的话，还可以写入
+    	//水位在active时设置
+    	if(ctx.channel().isWritable()) {
     	ChannelFuture future = ctx.writeAndFlush(msg);
-    	//发送完毕会返回一个信息
-    	future.addListener(new ChannelFutureListener(){
-			@Override
-			public void operationComplete(ChannelFuture f) {
-				if(!f.isSuccess()) {
-					f.cause().printStackTrace();
+	    	//发送完毕会返回一个信息
+	    	future.addListener(new ChannelFutureListener(){
+				@Override
+				public void operationComplete(ChannelFuture f) {
+					if(!f.isSuccess()) {
+						f.cause().printStackTrace();
+					}
 				}
-			}
-		});
+			});
+    	}
     }
     public static void ctxCloseFuture(ChannelHandlerContext ctx) {
 		//关闭该通道
