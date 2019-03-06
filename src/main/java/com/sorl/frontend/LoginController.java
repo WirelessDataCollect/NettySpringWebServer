@@ -6,10 +6,14 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.ui.ModelMap;
 
+import com.mongodb.BasicDBObject;
+import com.sorl.backend.MyMongoDB;
+import com.sorl.attributes.InfoMgdAttributes;
+import com.sorl.backend.RunPcServer;;
+
 @Controller
 //@RequestMapping("/ServerWeb")  //控制器WebController中提到的虚拟子文件夹
 public class LoginController{ 
-	
 	@RequestMapping(value = "/",method = RequestMethod.GET)//地址
 	   public ModelAndView page() {
 		   return new ModelAndView("login","command",new Admin());//jsp文件
@@ -29,13 +33,19 @@ public class LoginController{
    //POST：在提交表单时，表达中的参数将作为请求头中的信息发送（显示.../working，和working.jsp没有关系）
    @RequestMapping(value = "/working",method = RequestMethod.POST)  //这里的value指的是地址
    public String login(@ModelAttribute("SpringWeb")Admin admin,ModelMap model) {
-	   if(admin.getName().equals("song") && admin.getKey().equals("123456")) {
-		      model.addAttribute("name", admin.getName());
-		      model.addAttribute("key", admin.getKey());
-		      return "working";  //working.jsp
-	   }
-	   else {
-		   return "verifailed";
+	   MyMongoDB mongo = RunPcServer.getInfoDb();
+	   //filter
+	   BasicDBObject filter = new BasicDBObject();
+	   filter.put((String)InfoMgdAttributes.MONGODB_USER_NAME_KEY, (String)admin.getName());
+	   filter.put((String)InfoMgdAttributes.MONGODB_USER_KEY_KEY, (String)admin.getKey());
+	   System.out.println(filter);
+	   Long docIter = mongo.count(filter) ;
+	   if(docIter >= 1) {
+	      model.addAttribute("name", admin.getName());
+	      model.addAttribute("key", admin.getKey());
+	      return "working";  //working.jsp
+	   }else {
+		  return "verifailed";
 	   }
    }
 

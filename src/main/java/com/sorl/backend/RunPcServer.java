@@ -31,6 +31,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 
+import com.sorl.attributes.InfoMgdAttributes;
 /**
 * 
 * 运行TCP服务器，用于连接上位机
@@ -200,6 +201,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String DONE_SIGNAL_OVER = "OVER";//结束，一般用于，数据发送
 	private final static String DONE_SIGNAL_ERROR = "ERROR";//失败
 	private final static String SEG_CMD_DONE_SIGNAL = SEG_KEY_VALUE;//分割Key:Value,如Login:OK，登录成功。如MongoFindDocs:rllllaw
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
@@ -410,7 +412,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 		try {
 			//BasicDBObject时Bson的实现
 			BasicDBObject filter = new BasicDBObject();
-			filter.put("user", userStr);
+			filter.put(InfoMgdAttributes.MONGODB_USER_NAME_KEY, userStr);
 			FindIterable<Document> docIter = RunPcServer.getInfoDb().collection.find(filter) ;
 			//forEach：异步操作
 			docIter.forEach(new Block<Document>() {
@@ -418,7 +420,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			    public void apply(final Document document) {//每个doc所做的操作
 			    	
 			    	//先获取db中user的key
-			    	String key = (String) document.get("key");//获取密码
+			    	String key = (String) document.get(InfoMgdAttributes.MONGODB_USER_KEY_KEY);//获取密码
 			    	System.out.println("\nKey in DB: "+key);//查看查询到的密码明文
 			    	//计算得到keyHash
 			    	String keyHashStrLocal = Md5.getKeySaltHash(key, salt);

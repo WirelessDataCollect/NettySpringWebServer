@@ -30,6 +30,7 @@ public class MyMongoDB{
 	protected MongoDatabase mongoDatabase;
 	private String colName;
 	private String dbName;
+	
 	/**
 	 * num 从mongodb中获取到的doc个数
 	 */

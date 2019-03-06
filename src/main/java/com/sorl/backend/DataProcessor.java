@@ -9,6 +9,7 @@ import com.mongodb.async.SingleResultCallback;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
 
 /**
 * 
@@ -194,11 +195,12 @@ public class DataProcessor {
 		/*获取测试名称*/
 		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
 		msg.getBytes(TEST_NAME_IDX,testNameTemp);
-		this.testName = new String(testNameTemp.array());
+		this.testName = testNameTemp.toString(CharsetUtil.UTF_8);
+//		this.testName = new String(testNameTemp.array());
 		testName = testName.trim();//将最后的空字符去掉
-//		System.out.printf("Test Name : \"%s\" ",this.testName);
+		System.out.printf("Test Name : \"%s\" \r\n",this.testName);
 		return true;
-	}	
+	}
 
 	/**
 	* 数据包的提取,除了前16bits帧头外的adc数据，adc数据以[channel1低八位,channel1高八位,channel2低八位,channel2高八位...]传输
