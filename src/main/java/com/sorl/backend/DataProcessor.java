@@ -86,15 +86,7 @@ public class DataProcessor {
 		/*生成document*/
 		BasicDBObject bdoAdcVal = getAdcVal4CH(msg,(short)(adc_count));
 		byte[] byteRawData = new byte[msg.readableBytes()];
-		msg.readBytes(byteRawData);
-//		msg.forEachByte(new ByteProcessor() {
-//			@Override
-//			public boolean process(byte value) throws Exception {
-//				// TODO Auto-generated method stub
-//				rawDataList.add(value);
-//				return false;
-//			}
-//		});
+		msg.readBytes(byteRawData);//读取msg，写入到byteRawData
 		Document doc = new Document(DataProcessor.MONGODB_KEY_NODE_ID,nodeId)//该包的节点
 				.append(DataProcessor.MONGODB_KEY_YYYYMMDD, yyyy_mm_dd)//改包的年月日
 				.append(DataProcessor.MONGODB_KEY_HEADTIME,headtime)//改包的起始时间
@@ -104,17 +96,7 @@ public class DataProcessor {
 				.append(DataProcessor.MONGODB_KEY_TESTNAME,testName)//测试名称
 				.append(DataProcessor.MONGODB_KEY_ADC_VAL,bdoAdcVal )//解析后的ADC数字量
 				.append(DataProcessor.MONGODB_KEY_RAW_DATA,byteRawData );//原始数据
-//				.append(DataProcessor.MONGODB_KEY_RAW_DATA,msg);//原始数据
-		
-//		Document doc1 = new Document("testName",123);
-//		try{
-//			mongodb.insertOne(doc1, new SingleResultCallback<Void>() {
-//			    public void onResult(final Void result, final Throwable t) {
-//					        System.out.println("Document inserted!");
-//			    }});			
-//		}catch(Exception e) {
-//			System.err.println(e);
-//		}
+
 		/*doc存入数据库*/
 		//mongodb.insertOne已加锁
 		try{
