@@ -194,11 +194,11 @@ public class DataProcessor {
 //		System.out.printf("Io1 : %d  Io2 : %d\n",io1,io2);		
 		/*获取测试名称*/
 		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
-		msg.getBytes(TEST_NAME_IDX,testNameTemp);
+		msg.getBytes(TEST_NAME_IDX,testNameTemp,DataProcessor.MAX_TEST_NAME);
 		this.testName = testNameTemp.toString(CharsetUtil.UTF_8);
 //		this.testName = new String(testNameTemp.array());
 		testName = testName.trim();//将最后的空字符去掉
-		System.out.printf("Test Name : \"%s\" \r\n",this.testName);
+//		System.out.printf("Test Name : \"%s\" \r\n",this.testName);
 		return true;
 	}
 

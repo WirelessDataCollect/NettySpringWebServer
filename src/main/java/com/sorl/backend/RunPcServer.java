@@ -208,7 +208,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	//转化为string
         	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
             //输出信息
-            System.out.println("Recv from PC:"+message);
+            System.out.println("Recv from PC:"+new String(message.getBytes(CharsetUtil.UTF_8)));
         	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO);//将CMD和info分成两段
         	String cmd = splitMsg[0];
         	System.out.println("Cmd : "+ cmd);
@@ -224,7 +224,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			default:
         				break;
         		}
-         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//LOGINED_STA) {//已经登录
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {//已经登录REQUEST_CONNECT_STA) {
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -327,7 +327,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	            		//当前状态时请求连接状态而且用户名和密码匹配成功
 	            		loginMd5(ctx,info);
 	                    break;
-	            	default:
+	            	default://不认识的命令，强制断开
+	            		RunPcServer.delCh(ctx);
 	            		break;
         		}
         	}//end of if elif
@@ -433,9 +434,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                     	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
                         	//设置该通道为信任
                     		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.LOGINED_STA);
-                    	}
-                    	//如果当前已经登录了
-                    	else {
+                    	}else {                	//如果当前已经登录了
                     		//do nothing!
                     	}
 			    	}
@@ -450,8 +449,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                    	//返回登录信息
 	                    	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_LOGIN+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
 //	                    	ctx.writeAndFlush(Unpooled.copiedBuffer("Login"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK,CharsetUtil.UTF_8));
-	                    }
-	                    else {//登录失败，已经断开了
+	                    }else {//登录失败，已经断开了
 	                    	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_LOGIN+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_ERROR);
 	                    	//删除这个通道
 	                    	RunPcServer.delCh(ctx);   	
