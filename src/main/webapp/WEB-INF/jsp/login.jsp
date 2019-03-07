@@ -11,7 +11,7 @@
 <body>
 
 <h2>Login</h2>
-<form:form method="POST" action="/NettySpringWebServer/working">
+<form:form method="POST" action="/working">
    <table>
     <tr>
         <td><form:label path="name">Name</form:label></td>
