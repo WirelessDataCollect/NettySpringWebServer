@@ -4,11 +4,13 @@
 
 1.从设备端接收原始数据并进行解析
 
-2.将解析后的数据转发给PC上位机
+2.将原数据直接（命令驱动）转发给PC上位机
 
 3.将解析后的数据存储在服务器的MongoDB数据库中
 
-4.通过web查看数据的情况
+4.上位机连接服务器，通过命令调取测试名称、测试数据等
+
+*5.通过web查看某些特性*
 
 ## 运行流程
 ### 上位机和服务器的连接
@@ -16,62 +18,29 @@
 
 上位机加入服务器channel map，并设置为请求连接状态
 
-2、服务器产生RSA算法密钥，并发送公钥(n,e)给上位机
+2、服务器单独为每个通道（即上位机）生成一个盐值（salt）
+
+发送给上位机，数据格式为RandStr:具体的盐值，即```RandStr:j7sjbwwDxzoCYybveyk6```
 
 3、上位机加密管理员账户和密码
 
-以ASCII码形式转换
+用户密码(UTF-8字符串)  \-\-\-MD5\-\-\-\>  密码密文结合salt  \-\-\-MD5\-\-\-\>  最终密文
 
-如用户名：A(65)B(66)，则将'A'以数值65加密(RSA公式：f(C) = C\^e &nbsp mod &nbsp N),B以数值66加密，加密后为f('A'),f('B')
+以Login指令登录，具体见命令表。
 
-数值f('A')和f('B')均转化为String——SA和SB再发送。
+4、服务器接收来自上位机的用户名和密码密文
 
-用户名和密码(假设也为SA和SB)发送形式："SA,Sb;SA,Sb"。用户名和密钥用分号";"分开，用户名和密钥内部数值用逗号","分开。
+5、服务器从数据库中获取相应用户的密码
 
-4、服务器接收来自上位机的用户名和密钥
+*后期考虑是否使用密文存储密码*
 
-5、服务器使用私钥解密
+具体密文存储方案：每个密码都结合一个固定字符串（服务器和上位机相同）后使用MD5计算出密文。
 
-6、服务器提取数据库中的用户名和密钥和上位机发送过来的用户和密钥对比。
+6、服务器提取数据库中的用户名和密码，根据生成的盐值计算出最终密文，和上位机发送过来的最终密文对比。
 
 7、如果对比成功，则将该channel加入到信任区
 
 如果对比失败，则将该通道删除
-
-### 正式测试流程
-
-注：还没有做多地同时测量
-
-1、上位机已经进入服务器的信任区(### 上位机和服务器的连接)
-
-2、上位机发送本次测试地点名称（如果不设置测试地点，则认为需求只有远程读取mongodb数据）
-
-3、服务器注册该地点，其他测试地点不能再使用这个名称
-
-4、上位机设置本次测试名称+时间戳到服务器
-
-5、上位机启动设备（包括发送测试地点名称）
-
-设备帧头需要发送地点名称
-
-### 服务器启动运行
-1、启动初始化
-
-2、连接测试地点的上位机
-
-3、验证管理员和密码，并用RSA加密
-
-验证通过
-
-4、上位机发送过来测试地点，服务器查看测试地点是否存在
-
-如果存在，回复已存在的命令
-
-如果不存在，则加入该测试地点
-
-5、测试开始后，服务器需要分析数据的测试地点
-
-将数据存放在测试地点+测试名称+时间戳作为集合col的名称
 
 ### 上位机请求实时数据
 1、上位机发送请求命令（前提是上位机已经处于信任区）
@@ -95,7 +64,7 @@
 * 用户登录
 
 ### 后端
-服务器主要包括三个方面的功能——从设备端接收原始数据并进行解析；将解析后的数据转发给PC上位机；将解析后的数据存储在服务器的MongoDB数据库中。
+服务器主要包括三个方面的功能——从设备端接收原始数据并进行解析；将（实时或者历史）原数据转发给PC上位机；将解析后的数据和原数据存储在服务器的MongoDB数据库中。
 
 本服务器基于Netty和Spring框架。
 
@@ -105,42 +74,51 @@
 
 * 数据转发
 
-PC上位机通过TCP连接服务器8081端口，实施接受经过服务器转发的设备采集数据。
+PC上位机通过TCP连接服务器8089端口，实施接受经过服务器转发的设备采集数据。
 
 * 数据存储
 
 服务器接受设备数据，并存储在MongoDB数据库中。
 
+单个数据包大小：<1KB；每秒钟14-15个包
+
 存储格式：
 
 ```Json
 {
-    "_id" : ObjectId("5b90c70aa7986c262ff73c34"),
-    "wifi_client_id" : 48,
-    "yyyy_mm_dd" : NumberLong(842084913),
-    "headtime" : NumberLong(842084913),
-    "adc_count_short" : NumberLong(2),
-    "io1" : 48,
-    "io2" : 48,
-    "adc_val" : {
-        "ch1" : [
-            787,
-            771
-        ],
-        "ch2" : [
-            787,
-            771
-        ],
-        "ch3" : [
-            787,
-            803
-        ],
-        "ch4" : [
-            771,
-            803
-        ]
-    }
+	"_id" : ObjectId("5c831c7503047748eb06632b"),
+	"nodeId" : 3,
+	"yyyy_mm_dd" : NumberLong(0),
+	"headtime" : NumberLong(1298),
+	"adc_count_short" : NumberLong(67),
+	"io1" : 0,
+	"io2" : 0,
+	"test" : "Default Name",
+	"adc_val" : {
+		"ch1" : [
+			6297,
+			6293,
+			...
+		],
+		"ch2" : [
+			2,
+			2,
+			...
+		],
+		"ch3" : [
+			2051,
+			2052,
+			...
+		],
+		"ch4" : [
+			11507,
+			11507,
+			...
+		]
+	},
+	"raw_data" : BinData(0,"AAAAABIFAAAYAgAAAwAAEkRlZmF1bHQgTmFtZQAAAAAAAAAAAAAAAAAAAAAAAAAAGJkAAggDLPMYlQACCAQs8xiUAAEIBizzGJcAAggHLPMYmQACCAos8xiXAAIIDizzGJYAAggQLPMYmQACCBQs9BiXAAIIFyz0GJgAAggZLPMYlQACCBos8xiYAAIIGizzGJcAAggYLPMYlgACCBUs8xiZAAIIEyzzGJYAAggPLPMYlQACCAws8xiYAAIICCzzGJgAAggGLPMYlQABCAQs8xiJAAIIAiz0GJYAAggDLPMYmQACCAUs9BiTAAIICCzzGJkAAggKLPMYmAACCA8s8xibAAIIESzzGJcAAggVLPMYlQACCBcs8xicAAIIGSzzGJcAAggaLPMYkgACCBos8xiZAAIIFyz0GJYAAggWLPMYlgACCBMs8xiYAAIIDyzzGJYAAggMLPMYkgACCAos8xiTAAIIBizzGJEAAggELPQYlwACCAMs8xiVAAIIAyz0GJUAAggFLPMYlQABCAgs8xiTAAIICSzyGJQAAggOLPQYkgACCBEs8xiUAAIIFCzyGJUAAggYLPMYlwABCBks8hiTAAIIGizzGJEAAggaLPMYlQACCBgs9BiRAAIIFSzzGJIAAggTLPMYkwACCA8s8xiYAAIIDSz0GJQAAggJLPMYlAABCAcs8xiTAAIIBCzzGJUAAQgDLPQYlwABCAMs9BiUAAIIBSzzGJYAAggILPMYlQACCAos8xiXAAEIDiz0GJYAAggRLPM=")
 }
+
 ```
 
 # 上位机和服务器的交互
@@ -152,6 +130,8 @@ PC上位机通过TCP连接服务器8081端口，实施接受经过服务器转�
 ":"：用于分割子info的key:value（或者大小关系）
 
 ","：用于分割子info中的value(多用于分割上下界，如year:2019,2033，表示年份从2019到2033)
+
+"\\n"：一个包的结尾，用于解析TCP包粘包问题。
 
 ```
 MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
@@ -167,8 +147,8 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ### 数据库查询
 |上位机命令|信息|服务器返回|结束|说明|
 |-|-|-|-|-|
-|MongoFindDocsNames|none|MongoFindDocsNames:xxx|MongoFindDocsNames:OVER|查询所有的doc名称|
-|MongoFindDocs|none|MongoFindDocs:xxx|MongoFindDocs:OVER|根据条件查询doc，并发送给上位机|
+|MongoFindDocsNames|none|MongoFindDocsNames:xxx\\n|MongoFindDocsNames:OVER\\n|查询所有的doc名称|
+|MongoFindDocs|none|MongoFindDocs:xxx|MongoFindDocs:OVER\\n|根据条件查询doc，并发送给上位机|
 
 ```
 eg.查询测试名称：test1_20190121，从日期8245810到8245820的数据
@@ -177,16 +157,27 @@ MongoFindDocs+test:test1_20190121;yyyy_mm_dd:8245810,8245820
 eg.查询测试名称：test1_20190121，从那一天的8245840到8245840的数据（即==8245840）
 MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ```
+
 ### 指令
 |上位机命令|信息|服务器返回|说明|
 |-|-|-|-|
-|Login|登录用户名;MD5加密数据|Login:OK|登录用户|
-|GetRtdata|none|GetRtdata:OK|获取实时数据|
-|StopGetRtdata|none|StopGetRtdata:OK|停止获取实时数据|
-|HeartBeat|none|HeartBeat:GET|心跳包|
-|Disconnect|none|Disconnect:OK|断开连接|
+|Login|登录用户名;MD5加密数据|Login:OK\\n|登录用户|
+|GetRtdata|none|GetRtdata:OK\\n|获取实时数据|
+|StopGetRtdata|none|StopGetRtdata:OK\\n|停止获取实时数据|
+|HeartBeat|none|HeartBeat:GET\\n|心跳包|
+|Disconnect|none|Disconnect:OK\\n|断开连接|
+
+**说明**
+
+* 关于登录(Login)
+
+```Login+登录用户名;MD5加密数据``` 的MD5加密数据是经过两次MD5加密的。
+
+用户密码(UTF-8字符串)  \-\-\-MD5\-\-\-\>  密码密文结合salt  \-\-\-MD5\-\-\-\>  最终密文
 
 # 数据库操作
+
+快速添加一个数据
 
 ```
 eg.

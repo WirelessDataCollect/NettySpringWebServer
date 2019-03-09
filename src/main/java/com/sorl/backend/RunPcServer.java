@@ -194,6 +194,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String SEG_INFO1_INFON = ";";//分割多个子信息
 	private final static String SEG_KEY_VALUE = ":";//分割key和calue
 	private final static String SEG_LOWER_UPPER_BOUND = ",";//分割value的上下界
+	private final static String SEG_TOW_PACK = "\n";//分割两个tcp包，针对粘包现象
 //	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
 	//给某个命令的返回信息
 	private final static String DONE_SIGNAL_OK = "OK";//成功
@@ -516,6 +517,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //	}
     /**
      * 发送信息，会受到成功的信息，进而处理（不会阻塞等待）
+     * 
+     * 消息末尾加上一个'\n'结束符
      * @param ctx 通道ctx
      * @param msg 要发送的String信息
      */
@@ -523,8 +526,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     	//如果这个channel没有到达水位的话，还可以写入
     	//水位在active时设置
     	if(ctx.channel().isWritable()) {
-        	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg,CharsetUtil.UTF_8));
-        	//等待发送完毕
+        	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg+TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
+          	//等待发送完毕
         	future.addListener(new ChannelFutureListener(){
     			@Override
     			public void operationComplete(ChannelFuture f) {
