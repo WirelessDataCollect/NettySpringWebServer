@@ -18,7 +18,6 @@ public class ChannelAttributes {
 	public final static int REQUEST_CONNECT_STA = 0x01;
 	public final static int LOGINED_STA=0x02;
 	public final static int DATA_GET_STA = 0x40;
-	public final static int MAX_CHANNEL_NUM = 100;	
 	private final Channel channel;//通道,初始化后不可改变
 	private final ChannelHandlerContext context;
 	private String encryption;//加密算法

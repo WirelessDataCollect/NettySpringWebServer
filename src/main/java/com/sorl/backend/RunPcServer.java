@@ -45,7 +45,7 @@ public class RunPcServer implements Runnable{
 	private String threadName = "PC-Thread";
 	private int listenPort = 8080;
 	public Channel ch = null;
-	
+	public final static int MAX_CHANNEL_NUM = 50;	
 	/**
 	 * infoDb 从db中获取信息
 	 */
@@ -75,14 +75,14 @@ public class RunPcServer implements Runnable{
 	 * 获取保存同服务器连接的PC的通道
 	 * @return {@link Map}
 	 */
-	public static Map<String,ChannelAttributes> getChMap(){
+	public static synchronized Map<String,ChannelAttributes> getChMap(){
 		return ch_map;
 	}
 	/**
 	 * 返回连接服务器的PC个数
 	 * @return int
 	 */
-	public int getPcNum(){
+	public synchronized int  getPcNum(){
 		return ch_map.size();
 	}
 	/**
@@ -363,8 +363,10 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 		ctx.channel().config().setWriteBufferHighWaterMark(50 * 1024 * 1024);//50MB
     	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
     	//通道数太多了
-    	if(RunPcServer.getChMap().size()>ChannelAttributes.MAX_CHANNEL_NUM) {
-    		TCP_ServerHandler4PC.ctxCloseFuture(ctx);
+    	if(RunPcServer.getChMap().size()>RunPcServer.MAX_CHANNEL_NUM) {
+//    		TCP_ServerHandler4PC.ctxCloseFuture(ctx);
+//    		System.out.printf("Now , Channel Num : %d\r\n", RunPcServer.getChMap().size());
+    		channelInactive(ctx);//关闭通道
 			return;
     	}
     	//加入该通道
@@ -378,12 +380,14 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicE().toString()+","
 //    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicN().toString()+")"
 //    			+"\n", CharsetUtil.UTF_8));
+    	System.out.printf("Now , Channel Num : %d\r\n", RunPcServer.getChMap().size());
         ctx.fireChannelActive();
     }//end of channelActive
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		RunPcServer.delCh(ctx);
 		System.out.println("PC "+ctx.channel().remoteAddress().toString()+" disconnected!");
+		System.out.printf("Now , Channel Num : %d\r\n", RunPcServer.getChMap().size());
 		ctx.fireChannelInactive();
 	}
     @Override
@@ -562,6 +566,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     public static void ctxCloseFuture(ChannelHandlerContext ctx) {
 		//关闭该通道
 		ChannelFuture future = ctx.close();
+		System.out.println("Get In Close : "+ctx.pipeline().channel().toString());
     	future.addListener(new ChannelFutureListener(){
 			@Override
 			public void operationComplete(ChannelFuture f) {
