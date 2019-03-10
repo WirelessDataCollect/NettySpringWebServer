@@ -157,6 +157,9 @@ MongoFindDocsNames
 eg.查询"yyyy_mm_dd == 8245840"的数据实验名称（test）
 MongoFindDocsNames+yyyy_mm_dd:8245840
 
+eg.查询"yyyy_mm_dd在日期8245840到8245845"的数据实验名称（test）
+MongoFindDocsNames+yyyy_mm_dd:8245840,8245845
+
 其他参数类似，可叠加
 ```
 
