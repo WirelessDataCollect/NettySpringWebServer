@@ -154,6 +154,7 @@ public class RunPcServer implements Runnable{
 	public void start () {
 		System.out.println("Starting " +  threadName );
 		if (t == null) {
+			//运行(this)这个runnable接口下的对象
 			t = new Thread (this, threadName);
 			t.start ();
 		}
@@ -225,14 +226,61 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			default:
         				break;
         		}
-         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {//已经登录REQUEST_CONNECT_STA) {
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
                 //判断cmd类型
                 switch(cmd) {
                 	case TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES://获取所有的doc的test名称
-	                	DistinctIterable<String> disIter = mongodb.collection.distinct(DataProcessor.MONGODB_KEY_TESTNAME, String.class);
+                		//filter
+            			BasicDBObject filterNames = new BasicDBObject();
+                		//TODO  to test
+                		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
+                			//splitMsg[1]格式    |key:info;key:info;......|
+                			String[] filtersStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON);//将信息划分为多个filters
+//                			System.out.println("filterStr:"+filtersStr[0]);                			
+                 			//缓存filter的上下界
+                 			int lowerBound=0;int upperBound=0;
+                 			for(String filterStr:filtersStr) {//将过滤信息都put到filter中
+                 				String[] oneFilter = filterStr.split(TCP_ServerHandler4PC.SEG_KEY_VALUE,2);//eg.{test:test1_201901251324}，没有参数也可以
+                 				switch(oneFilter[0]) {
+    	             				case DataProcessor.MONGODB_KEY_TESTNAME://过滤测试名称，test:xxxxx
+    	             					filterNames.put(oneFilter[0], oneFilter[1]);
+    	             					break;
+    	             				case DataProcessor.MONGODB_KEY_YYYYMMDD://过滤年月日,yyyy_mm_dd:xxxxxx
+    	             					String[] lowerUpperYYYYMMDD = oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND);
+    	             					if(lowerUpperYYYYMMDD.length > 1) {
+    	             						lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+        	             					upperBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[1]);//大的日期
+        	             					filterNames.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
+    	             					}else if(lowerUpperYYYYMMDD.length == 1) {
+    	             						lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+    	             						filterNames.put(oneFilter[0], new BasicDBObject("$eq",lowerBound));//==
+    	             					}else if(lowerUpperYYYYMMDD.length < 1){
+    	             						//没有约束
+    	             					}
+    	             					break;
+    	             				case DataProcessor.MONGODB_KEY_HEADTIME://过滤每一天中的ms,headtime:xxxxxx
+    	             					String[] lowerUpperHEADTIME = oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND);
+    	             					if(lowerUpperHEADTIME.length > 1) {
+    	             						lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+        	             					upperBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[1]);//大的日期
+        	             					filterNames.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
+    	             					}else if(lowerUpperHEADTIME.length == 1) {
+    	             						lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+    	             						filterNames.put(oneFilter[0], new BasicDBObject("$eq",lowerBound));//==
+    	             					}else if(lowerUpperHEADTIME.length < 1){
+    	             						//没有约束
+    	             					}
+    	             					break;
+    	             				default:
+    	             					break;
+    	             				}//end of case
+                 			}//end of for
+                		}
+                		//根据过滤信息来获取实验名称
+                		DistinctIterable<String> disIter = mongodb.collection.distinct(DataProcessor.MONGODB_KEY_TESTNAME, filterNames, String.class);	                	
 	                	disIter.forEach(new Block<String>() {
 	    					@Override
 	    					public void apply(String name) {
@@ -254,13 +302,13 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                	});
 	                	break;
                 	case TCP_ServerHandler4PC.MONGODB_FIND_DOCS://获取MongoDB中的文档信息，可以使用filter
+                		//filter
+            			BasicDBObject filterDocs = new BasicDBObject();
                 		//TODO  to test
                 		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
                 			//splitMsg[1]格式    |key:info;key:info;......|
                 			String[] filtersStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON);//将信息划分为多个filters
 //                			System.out.println("filterStr:"+filtersStr[0]);
-                 			//filter
-                			BasicDBObject filter = new BasicDBObject();
                  			//缓存filter的上下界
                  			int lowerBound=0;int upperBound=0;
                  			for(String filterStr:filtersStr) {//将过滤信息都put到filter中
@@ -268,46 +316,64 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 
                  				switch(oneFilter[0]) {
     	             				case DataProcessor.MONGODB_KEY_TESTNAME://过滤测试名称，test:xxxxx
-    	             					filter.put(oneFilter[0], oneFilter[1]);
+    	             					filterDocs.put(oneFilter[0], oneFilter[1]);
     	             					break;
     	             				case DataProcessor.MONGODB_KEY_YYYYMMDD://过滤年月日,yyyy_mm_dd:xxxxxx
-    	             					lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
-    	             					upperBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[1]);//大的日期
-    	             					filter.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
+    	             					String[] lowerUpperYYYYMMDD = oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND);
+    	             					if(lowerUpperYYYYMMDD.length > 1) {
+    	             						lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+        	             					upperBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[1]);//大的日期
+        	             					filterDocs.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
+    	             					}else if(lowerUpperYYYYMMDD.length == 1) {
+    	             						lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+    	             						filterDocs.put(oneFilter[0], new BasicDBObject("$eq",lowerBound));//==
+    	             					}else if(lowerUpperYYYYMMDD.length < 1){
+    	             						//没有约束
+    	             					}
     	             					break;
     	             				case DataProcessor.MONGODB_KEY_HEADTIME://过滤每一天中的ms,headtime:xxxxxx
-    	             					lowerBound= Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的时间/ms
-    	             					upperBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[1]);//大的时间/ms
-    	             					filter.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
+    	             					String[] lowerUpperHEADTIME = oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND);
+    	             					if(lowerUpperHEADTIME.length > 1) {
+    	             						lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+        	             					upperBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[1]);//大的日期
+        	             					filterDocs.put(oneFilter[0], new BasicDBObject("$gte",lowerBound).append("$lte", upperBound));//>=和<=
+    	             					}else if(lowerUpperHEADTIME.length == 1) {
+    	             						lowerBound = Integer.parseInt((oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND))[0]);//小的日期
+    	             						filterDocs.put(oneFilter[0], new BasicDBObject("$eq",lowerBound));//==
+    	             					}else if(lowerUpperHEADTIME.length < 1){
+    	             						//没有约束
+    	             					}
     	             					break;
     	             				default:
     	             					break;
     	             				}//end of case
                  			}//end of for
-                 			FindIterable<Document> docIter = mongodb.collection.find(filter) ;
-                 			docIter.forEach(new Block<Document>() {
-    						    @Override
-    						    public void apply(final Document document) {//每个doc所做的操作
-    						    	ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
-    						    	Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA); 
-    						    	byte[] rawDataByte = rawDataBin.getData();
-    						    	ByteBuf rawDataEncoded = ctx.alloc().buffer(4 * rawDataByte.length);//分配空间
-    						    	rawDataEncoded.writeBytes(rawDataByte);
-    						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,rawDataEncoded);//发给上位机原始数据
-    						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
-    						        @Override
-    						        public void onResult(final Void result, final Throwable t) {
-    						        	//TODO
-    						        	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS+
-    						        			TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
-//    						        	ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over",CharsetUtil.UTF_8));//发给上位机原始数据
-    						            System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
-    						        }			    	
-    						    });
-                		}else{//无过滤信息，即把所有到的col全部输出
-                			TCP_ServerHandler4PC.writeFlushFuture(ctx,"Please input filter info");
-//                			ctx.writeAndFlush(Unpooled.copiedBuffer("Please input filter info",CharsetUtil.UTF_8));//请输入查询过滤器信息
-                		}  
+                		}
+//                		else{//无过滤信息
+//                			//不把数据全部输出出去，不然需要大量的时间                			
+//                			TCP_ServerHandler4PC.writeFlushFuture(ctx,"Please input filter info");
+////                			ctx.writeAndFlush(Unpooled.copiedBuffer("Please input filter info",CharsetUtil.UTF_8));//请输入查询过滤器信息
+//                		}  
+                		FindIterable<Document> docIter = mongodb.collection.find(filterDocs) ;
+             			docIter.forEach(new Block<Document>() {
+						    @Override
+						    public void apply(final Document document) {//每个doc所做的操作
+						    	ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
+						    	Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA); 
+						    	byte[] rawDataByte = rawDataBin.getData();
+						    	ByteBuf rawDataEncoded = ctx.alloc().buffer(4 * rawDataByte.length);//分配空间
+						    	rawDataEncoded.writeBytes(rawDataByte);
+						    	TCP_ServerHandler4PC.writeFlushFuture(ctx,rawDataEncoded);//发给上位机原始数据
+						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
+						        @Override
+						        public void onResult(final Void result, final Throwable t) {
+						        	//TODO
+						        	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS+
+						        			TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+//						        	ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over",CharsetUtil.UTF_8));//发给上位机原始数据
+						            System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+						        }			    	
+						    });
                 		break;
                 	case TCP_ServerHandler4PC.MONGODB_CREATE_COL://创建collection
                 		//TODO
@@ -363,25 +429,20 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 		ctx.channel().config().setWriteBufferHighWaterMark(50 * 1024 * 1024);//50MB
     	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
     	//通道数太多了
-    	if(RunPcServer.getChMap().size()>RunPcServer.MAX_CHANNEL_NUM) {
-//    		TCP_ServerHandler4PC.ctxCloseFuture(ctx);
-//    		System.out.printf("Now , Channel Num : %d\r\n", RunPcServer.getChMap().size());
-    		channelInactive(ctx);//关闭通道
-			return;
+    	Map<String,ChannelAttributes> chMapTemp = RunPcServer.getChMap();
+    	synchronized(chMapTemp) {//拥有ch map的锁
+        	if(chMapTemp.size()>RunPcServer.MAX_CHANNEL_NUM) {
+        		channelInactive(ctx);//关闭通道
+    			return;
+        	}
+        	//加入该通道
+        	chMapTemp.put(ctx.channel().remoteAddress().toString(), new ChannelAttributes(ctx));  	
     	}
-    	//加入该通道
-    	RunPcServer.getChMap().put(ctx.channel().remoteAddress().toString(), new ChannelAttributes(ctx));
-    	String salt = RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getSalt();
+    	System.out.printf("Now , Channel Num : %d\r\n", chMapTemp.size());
+    	String salt = chMapTemp.get(ctx.channel().remoteAddress().toString()).getSalt();
     	TCP_ServerHandler4PC.writeFlushFuture(ctx,"RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt);
-//    	ctx.writeAndFlush(Unpooled.copiedBuffer("RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt,CharsetUtil.UTF_8));//发送salt
     	System.out.println("RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt);//打印salt
-    	//发送RSA算法的n和e
-//    	ctx.writeAndFlush(Unpooled.copiedBuffer("Private key (n,e) = ("
-//    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicE().toString()+","
-//    			+RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getEncryption().getPublicN().toString()+")"
-//    			+"\n", CharsetUtil.UTF_8));
-    	System.out.printf("Now , Channel Num : %d\r\n", RunPcServer.getChMap().size());
-        ctx.fireChannelActive();
+    	ctx.fireChannelActive();
     }//end of channelActive
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {

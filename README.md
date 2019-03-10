@@ -147,15 +147,34 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ### 数据库查询
 |上位机命令|信息|服务器返回|结束|说明|
 |-|-|-|-|-|
-|MongoFindDocsNames|none|MongoFindDocsNames:xxx\\n|MongoFindDocsNames:OVER\\n|查询所有的doc名称|
-|MongoFindDocs|none|MongoFindDocs:xxx|MongoFindDocs:OVER\\n|根据条件查询doc，并发送给上位机|
+|MongoFindDocsNames|key1:value1;key2:value2;...|MongoFindDocsNames:xxx\\n|MongoFindDocsNames:OVER\\n|查询所有的doc名称|
+|MongoFindDocs|key1:value1;key2:value2;...|MongoFindDocs:xxx|MongoFindDocs:OVER\\n|根据条件查询doc，并发送给上位机|
 
 ```
-eg.查询测试名称：test1_20190121，从日期8245810到8245820的数据
+eg.查询所有的doc名称
+MongoFindDocsNames
+
+eg.查询"yyyy_mm_dd == 8245840"的数据实验名称（test）
+MongoFindDocsNames+yyyy_mm_dd:8245840
+
+其他参数类似，可叠加
+```
+
+```
+eg.获取所有的doc
+MongoFindDocs
+
+eg.获取"测试名称：test1_20190121"，"从日期8245810到8245820的数据"
 MongoFindDocs+test:test1_20190121;yyyy_mm_dd:8245810,8245820
 
-eg.查询测试名称：test1_20190121，从那一天的8245840到8245840的数据（即==8245840）
-MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
+eg.获取"yyyy_mm_dd == 8245840"的数据
+MongoFindDocs+yyyy_mm_dd:8245840
+
+eg.获取"测试名称：test1_20190121"，"从那一天的8245840的数据"
+MongoFindDocs+test:test1_20190121;headtime:8245840
+
+其他参数类似，可叠加
+
 ```
 
 ### 指令
