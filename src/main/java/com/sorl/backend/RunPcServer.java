@@ -106,11 +106,16 @@ public class RunPcServer implements Runnable{
 	 * @return {@link Map}
 	 */
 	public static synchronized void delCh(ChannelHandlerContext ctx){
-		Map<String, ChannelAttributes> ch = RunPcServer.getChMap(); 
-		//从通道的map中删除掉这个通道
-		ch.remove(ctx.channel().remoteAddress().toString());
-		//关闭该通道,并等待future完毕
-		TCP_ServerHandler4PC.ctxCloseFuture(ctx);
+		try {
+			Map<String, ChannelAttributes> ch = RunPcServer.getChMap(); 
+			//从通道的map中删除掉这个通道
+			ch.remove(ctx.channel().remoteAddress().toString());
+			//关闭该通道,并等待future完毕
+			TCP_ServerHandler4PC.ctxCloseFuture(ctx);			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+
 	}	
 	@Override
 	public void run() {
@@ -455,7 +460,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         // 当出现异常就关闭连接
         cause.printStackTrace();
-        ctx.close();
+        RunPcServer.delCh(ctx);
     }
 	/**
 	 * 登录管理员Md5加密

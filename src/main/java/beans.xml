@@ -10,12 +10,12 @@
     http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
 	<context:annotation-config/>  <!-- 基于注解的配置 -->
-	
+   	
    <bean id="runPcServer" class="com.sorl.backend.RunPcServer">
        <property name="threadName" value="PC-Thread"/>
        <property name="listenPort" value="8089"/>
        <property name="infoDb" ref="infoMongoDB"/>
-   </bean>
+   </bean>   
    <!-- mongodb存储管理员信息的cols -->
    <bean id="infoMongoDB" class="com.sorl.backend.MyMongoDB"
    		init-method="init" destroy-method="destroy">  
@@ -38,6 +38,9 @@
    		<property name="dbName" value="udp"/>
    		<property name="colName" value="data"/>
    </bean> 
+   <!-- 测试工具，输出日志 -->
+   <bean id="testTools" class="com.sorl.backend.TestTools">
+   </bean>
       <!--<bean id="md5" class="com.nesc.security.Md5">
    </bean>-->   
 </beans>

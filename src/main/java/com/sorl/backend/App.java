@@ -17,14 +17,17 @@ public class App{
 	private RunPcServer pc_server;//面向PC的进程
 	private RunDeviceServer device_server;//面向设备的进程
     public App() { 
-    	
+    	/*获取context*/
     	context = new ClassPathXmlApplicationContext("beans.xml");
-    	test = new TestTools();
-    	test.start();
+    	/*获取RunPcServer類*/
     	pc_server = (RunPcServer)context.getBean("runPcServer");
     	pc_server.start();
+    	/*获取RunDeviceServer類*/
     	device_server = (RunDeviceServer)context.getBean("runDeviceServer");
     	device_server.start();  
+    	/*获取TestTools類*/
+    	test = (TestTools)context.getBean("testTools");
+    	test.start();
     }
 	/**
 	 * 获取bean的一个应用上下文
