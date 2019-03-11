@@ -531,58 +531,6 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 		}
 
 	}
-//	/**
-//	 * 登录管理员，命令"login"
-//	 * @param msg 登录信息(用户名+密码)，形式(逗号用于隔开同一个信息的加密数值，分号隔开不同信息)：
-//	 * "第一个字符加密数值,第二个字符加密数值,...;第一个字符加密数值,第二个字符加密数值"
-//	 * @return false：登录失败；true：登录成功
-//	 */
-//	private boolean loginRsa(ChannelHandlerContext ctx,String msg) {
-//		//解析加密数值
-//		try {
-//			//转化为字符串
-//			String[] info_str = msg.split(";");
-//			
-//			//提取管理员名称和密码，加密数值的字符串形式
-//			String[] name_str = info_str[0].split(",");
-//			String[] key_str = info_str[1].split(",");
-////			System.out.println("name:"+name_str[0]);
-////			System.out.println("key:"+key_str[0]);
-//			//创建用于保存加密数值的BigInteger数组
-//			char[] name_decoded = new char[name_str.length];
-//			char[] key_decoded = new char[key_str.length];
-//			int idx=0;
-//			for(String n_str : name_str) {
-//				name_decoded[idx] = (char)(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString())
-//						.getEncryption().getDencryptedVal(new BigInteger(n_str)).intValueExact());//如果BigInteger输出超出了char则会抛出异常
-//				idx++;
-//			}
-//			idx=0;
-//			for(String k_str : key_str) {
-//				key_decoded[idx] = (char)(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString())
-//						.getEncryption().getDencryptedVal(new BigInteger(k_str)).intValueExact());
-//				idx++;
-//			}
-//			String name = new String(name_decoded);
-//			String key = new String(key_decoded);
-//			//			//显示解码后的字符
-////			System.out.println("Decoded--->");
-////			System.out.println("name:"+name);
-////			//显示解码后的字符
-////			System.out.println("key:"+key);
-//			//BasicDBObject时Bson的实现
-//			BasicDBObject filter = new BasicDBObject();
-//			filter.put("name", name);
-//			filter.put("key", key);
-//			if(RunPcServer.getInfoDb().count(filter)>0) {
-//				System.out.println("Name-Key Matched!!");
-//				return true;
-//			}
-//		}catch(Exception e) {
-//			e.printStackTrace();
-//		}
-//		return false;	
-//	}
     /**
      * 发送信息，会受到成功的信息，进而处理（不会阻塞等待）
      * 
@@ -630,6 +578,10 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			});
     	}
     }
+    /**
+     * 关闭ctx
+     * @param ctx
+     */
     public static void ctxCloseFuture(ChannelHandlerContext ctx) {
 		//关闭该通道
 		ChannelFuture future = ctx.close();
