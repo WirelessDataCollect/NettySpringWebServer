@@ -27,7 +27,7 @@ public class DataProcessor {
 	private final int  WIFI_CLIENT_ID_MAX= 255;//模组id最大不超过
 	private final byte  ADC_CHANNEL_MAX= 4;//adc数据通道最多不超过
 	private final short ADC_BYTES_NUM = 2*ADC_CHANNEL_MAX;//ADC一个周期所占的bytes
-	private final static byte MAX_TEST_NAME = 32;//测试名称长度
+	private final static byte MAX_TEST_NAME = 64;//测试名称长度
 	private final static byte PACKAGE_TIME_IO_LENGTH = 16;//时间、IO、id这些数据的长度
 	private final static byte HEAD_FRAME_LENGTH = MAX_TEST_NAME + PACKAGE_TIME_IO_LENGTH;//一帧的头的长度，包括测试名称、yyyy_mm_dd、headtime、adc_count等
 	private final short CHECK_UBYTE = 15;//校验开始的位置，和headtime的低八位相等
