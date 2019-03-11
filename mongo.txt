@@ -1,0 +1,120 @@
+11-Mar-2019 14:19:20.670 INFO [Thread-9] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["http-nio-80"]
+11-Mar-2019 14:19:20.681 INFO [Thread-9] org.apache.coyote.AbstractProtocol.pause Pausing ProtocolHandler ["ajp-nio-8009"]
+11-Mar-2019 14:19:20.682 INFO [Thread-9] org.apache.catalina.core.StandardService.stopInternal Stopping service Catalina
+11-Mar-2019 14:19:20.686 INFO [localhost-startStop-2] org.springframework.context.support.AbstractApplicationContext.doClose Closing WebApplicationContext for namespace 'ServerWeb-servlet': startup date [Mon Mar 11 14:17:22 CST 2019]; root of context hierarchy
+Stopping Device-Thread
+java.lang.InterruptedException
+        at java.lang.Object.wait(Native Method)
+        at java.lang.Object.wait(Object.java:502)
+        at io.netty.util.concurrent.DefaultPromise.await(DefaultPromise.java:231)
+        at io.netty.channel.DefaultChannelPromise.await(DefaultChannelPromise.java:131)
+        at io.netty.channel.DefaultChannelPromise.await(DefaultChannelPromise.java:30)
+        at io.netty.util.concurrent.DefaultPromise.sync(DefaultPromise.java:337)
+        at io.netty.channel.DefaultChannelPromise.sync(DefaultChannelPromise.java:119)
+        at io.netty.channel.DefaultChannelPromise.sync(DefaultChannelPromise.java:30)
+        at com.sorl.backend.RunDeviceServer.runUdp(RunDeviceServer.java:142)
+        at com.sorl.backend.RunDeviceServer.run(RunDeviceServer.java:193)
+        at java.lang.Thread.run(Thread.java:748)
+Stopping PC-Thread
+Stopping TestTools
+java.lang.InterruptedException: sleep interrupted
+        at java.lang.Thread.sleep(Native Method)
+        at com.sorl.backend.TestTools.run(TestTools.java:25)
+        at java.lang.Thread.run(Thread.java:748)
+60 Packs/5s
+11-Mar-2019 14:19:20.706 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [cluster-ClusterId{value='5c85fd710304773a6d5ce358', description='null'}-localhost:27017] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ sun.misc.Unsafe.park(Native Method)
+ java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
+ java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2078)
+ com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitorRunnable.waitForSignalOrTimeout(DefaultServerMonitor.java:229)
+ com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitorRunnable.waitForNext(DefaultServerMonitor.java:210)
+ com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitorRunnable.run(DefaultServerMonitor.java:157)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.707 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [Thread-5] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ sun.nio.ch.EPoll.epollWait(Native Method)
+ sun.nio.ch.EPollPort$EventHandlerTask.poll(EPollPort.java:194)
+ sun.nio.ch.EPollPort$EventHandlerTask.run(EPollPort.java:268)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.708 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [Thread-6] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ sun.misc.Unsafe.park(Native Method)
+ java.util.concurrent.locks.LockSupport.park(LockSupport.java:175)
+ java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:2039)
+ java.util.concurrent.ArrayBlockingQueue.take(ArrayBlockingQueue.java:403)
+ sun.nio.ch.EPollPort$EventHandlerTask.run(EPollPort.java:262)
+ sun.nio.ch.AsynchronousChannelGroupImpl$1.run(AsynchronousChannelGroupImpl.java:112)
+ java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+ java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.708 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [cluster-ClusterId{value='5c85fd720304773a6d5ce359', description='null'}-localhost:27017] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ sun.misc.Unsafe.park(Native Method)
+ java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
+ java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2078)
+ com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitorRunnable.waitForSignalOrTimeout(DefaultServerMonitor.java:229)
+ com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitorRunnable.waitForNext(DefaultServerMonitor.java:210)
+ com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitorRunnable.run(DefaultServerMonitor.java:157)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.709 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [Thread-7] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ sun.misc.Unsafe.park(Native Method)
+ java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
+ java.util.concurrent.SynchronousQueue$TransferStack.awaitFulfill(SynchronousQueue.java:460)
+ java.util.concurrent.SynchronousQueue$TransferStack.transfer(SynchronousQueue.java:362)
+ java.util.concurrent.SynchronousQueue.poll(SynchronousQueue.java:941)
+ java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1073)
+ java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1134)
+ java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.710 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [Thread-8] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ sun.misc.Unsafe.park(Native Method)
+ java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
+ java.util.concurrent.SynchronousQueue$TransferStack.awaitFulfill(SynchronousQueue.java:460)
+ java.util.concurrent.SynchronousQueue$TransferStack.transfer(SynchronousQueue.java:362)
+ java.util.concurrent.SynchronousQueue.poll(SynchronousQueue.java:941)
+ java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1073)
+ java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1134)
+ java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.711 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [TestTools] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.lang.Thread.sleep(Native Method)
+ com.sorl.backend.TestTools.run(TestTools.java:25)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.711 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [nioEventLoopGroup-3-1] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ sun.nio.ch.EPollArrayWrapper.epollWait(Native Method)
+ sun.nio.ch.EPollArrayWrapper.poll(EPollArrayWrapper.java:269)
+ sun.nio.ch.EPollSelectorImpl.doSelect(EPollSelectorImpl.java:93)
+ sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:86)
+ sun.nio.ch.SelectorImpl.select(SelectorImpl.java:97)
+ io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+ io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:737)
+ io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:392)
+ io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:884)
+ io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.711 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [nioEventLoopGroup-2-1] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ sun.nio.ch.EPollArrayWrapper.epollWait(Native Method)
+ sun.nio.ch.EPollArrayWrapper.poll(EPollArrayWrapper.java:269)
+ sun.nio.ch.EPollSelectorImpl.doSelect(EPollSelectorImpl.java:93)
+ sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:86)
+ sun.nio.ch.SelectorImpl.select(SelectorImpl.java:97)
+ io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+ io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:737)
+ io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:392)
+ io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:884)
+ io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.712 WARNING [localhost-startStop-2] org.apache.catalina.loader.WebappClassLoaderBase.clearReferencesThreads The web application [ROOT] appears to have started a thread named [nioEventLoopGroup-2-2] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.lang.Thread.sleep(Native Method)
+ io.netty.util.concurrent.SingleThreadEventExecutor.confirmShutdown(SingleThreadEventExecutor.java:728)
+ io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:456)
+ io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:884)
+ io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+ java.lang.Thread.run(Thread.java:748)
+11-Mar-2019 14:19:20.728 INFO [Thread-9] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["http-nio-80"]
+11-Mar-2019 14:19:20.730 INFO [Thread-9] org.apache.coyote.AbstractProtocol.stop Stopping ProtocolHandler ["ajp-nio-8009"]
+11-Mar-2019 14:19:20.735 INFO [Thread-9] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["http-nio-80"]
+11-Mar-2019 14:19:20.736 INFO [Thread-9] org.apache.coyote.AbstractProtocol.destroy Destroying ProtocolHandler ["ajp-nio-8009"]
+
+
+
+
+
+

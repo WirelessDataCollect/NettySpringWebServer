@@ -1,1 +1,0 @@
- WARNING [http-nio-80-exec-1] org.springframework.web.servlet.DispatcherServlet.noHandlerFound No mapping found for HTTP request with URI [/] in DispatcherServlet with name 'ServerWeb'

@@ -145,11 +145,10 @@ public class RunPcServer implements Runnable{
             ch.closeFuture().sync();      
             
         } catch (Exception e) {//线程会将中断interrupt作为一个终止请求
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
+            e.printStackTrace();
         } finally {
-        	 workerGroup.shutdownGracefully();
-             bossGroup.shutdownGracefully();      	
+        	 workerGroup.shutdownGracefully().awaitUninterruptibly();
+             bossGroup.shutdownGracefully().awaitUninterruptibly();      	
         }
     }
 	/**
@@ -593,19 +592,22 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
      * @param msg 要发送的String信息
      */
     public static void writeFlushFuture(ChannelHandlerContext ctx,String msg) {
-    	//如果这个channel没有到达水位的话，还可以写入
-    	//水位在active时设置
-    	if(ctx.channel().isWritable()) {
-        	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg+TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
-          	//等待发送完毕
-        	future.addListener(new ChannelFutureListener(){
-    			@Override
-    			public void operationComplete(ChannelFuture f) {
-    				if(!f.isSuccess()) {
-    					f.cause().printStackTrace();
-    				}
-    			}
-    		});    		
+    	//如果还没有断开
+    	if(ctx.channel().isActive()) {
+    		//如果这个channel没有到达水位的话，还可以写入
+        	//水位在active时设置
+        	if(ctx.channel().isWritable()) {
+            	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg+TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
+              	//等待发送完毕
+            	future.addListener(new ChannelFutureListener(){
+        			@Override
+        			public void operationComplete(ChannelFuture f) {
+        				if(!f.isSuccess()) {
+        					f.cause().printStackTrace();
+        				}
+        			}
+        		});    		
+        	}    		
     	}
     }
     /**
