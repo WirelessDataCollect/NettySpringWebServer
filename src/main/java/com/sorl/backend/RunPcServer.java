@@ -203,7 +203,6 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
 	//给某个命令的返回信息
 	private final static String DONE_SIGNAL_OK = "OK";//成功
-	private final static String SIGNAL_GET = "GET";//表示收到信息
 	private final static String DONE_SIGNAL_OVER = "OVER";//结束，一般用于，数据发送
 	private final static String DONE_SIGNAL_ERROR = "ERROR";//失败
 	private final static String SEG_CMD_DONE_SIGNAL = SEG_KEY_VALUE;//分割Key:Value,如Login:OK，登录成功。如MongoFindDocs:rllllaw
@@ -408,7 +407,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	        	case TCP_ServerHandler4PC.HEART_BEAT_SIGNAL://心跳包
 	        		//TODO 每次更新心跳包的时间，过一段时间检查是否超过时间
 	        		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.HEART_BEAT_SIGNAL+
-	        				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.SIGNAL_GET);
+	        				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
 	        		break;
 	        	case TCP_ServerHandler4PC.PC_WANT_DISCONNECT://上位机想要断开连接
 	        		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_DISCONNECT+
