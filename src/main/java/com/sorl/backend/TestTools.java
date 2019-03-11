@@ -1,4 +1,6 @@
 package com.sorl.backend;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 /**
 * 
@@ -19,7 +21,9 @@ public class TestTools implements Runnable{
 			RunDeviceServer runDeviceServer = (RunDeviceServer) App.getApplicationContext().getBean("runDeviceServer");
 			packsNum = runDeviceServer.getPacksNum();  //获取packsnums
 			runDeviceServer.resetPacksNum();  //packsnums = 0
-			System.out.printf("%d Packs/5s\n",packsNum);			
+			Date date	 = new Date();
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			System.out.printf("%d Packs/5s\t%s\r\n",packsNum,sdf.format(date));	
 			try {//休息5s
 				Thread.sleep(TestTools.SLEEP_MS);//阻塞当前进程
 			} catch (InterruptedException e) {
