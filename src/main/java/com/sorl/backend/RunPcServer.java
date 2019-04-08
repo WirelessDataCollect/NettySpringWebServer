@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bson.Document;
 import org.bson.types.*;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.Block;
 import com.mongodb.async.SingleResultCallback;
@@ -199,6 +200,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String SEG_INFO1_INFON = ";";//分割多个子信息
 	private final static String SEG_KEY_VALUE = ":";//分割key和calue
 	private final static String SEG_LOWER_UPPER_BOUND = ",";//分割value的上下界
+	private final static String SEG_LIST_BOUND = ",";//分割value的列表，如dataType:CAN,ADC
 	private final static String SEG_TOW_PACK = "\n";//分割两个tcp包，针对粘包现象
 //	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
 	//给某个命令的返回信息
@@ -277,6 +279,15 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     	             						//没有约束
     	             					}
     	             					break;
+    	             				case DataProcessor.MONGODB_KEY_DATA_TYPE://过滤每一天中的不同数据类型数据，包括ADC、CAN等
+    	             					//TODO to test
+    	             					String[] dataTypeList = oneFilter[1].split(TCP_ServerHandler4PC.SEG_LIST_BOUND);
+    	             					BasicDBList options = new BasicDBList();
+    	             					//加入多个过滤信息
+    	             					for(String data_type:dataTypeList) {
+    	             						options.add(new BasicDBObject(DataProcessor.MONGODB_KEY_DATA_TYPE,data_type));
+    	             					}
+    	             					filterNames.append("$or", options);
     	             				default:
     	             					break;
     	             				}//end of case
@@ -347,6 +358,14 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     	             						//没有约束
     	             					}
     	             					break;
+    	             				case DataProcessor.MONGODB_KEY_DATA_TYPE://过滤每一天中的不同数据类型数据，包括ADC、CAN等
+    	             					String[] dataTypeList = oneFilter[1].split(TCP_ServerHandler4PC.SEG_LIST_BOUND);
+    	             					BasicDBList options = new BasicDBList();
+    	             					
+    	             					for(String data_type:dataTypeList) {
+    	             						options.add(new BasicDBObject(DataProcessor.MONGODB_KEY_DATA_TYPE,data_type));
+    	             					}
+    	             					filterDocs.append("$or", options);
     	             				default:
     	             					break;
     	             				}//end of case

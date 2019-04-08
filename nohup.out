@@ -1,0 +1,201 @@
+Initialising cipher: rc4-md5
+Running in local mode.
+Listen UDP socket state changed to QAbstractSocket::BoundState
+TCP server listening at 127.0.0.1:1080
+Connecting android.clients.google.com:443 from 127.0.0.1:42128
+Connecting clients1.google.com:443 from 127.0.0.1:42138
+Connecting mtalk.google.com:443 from 127.0.0.1:42146
+Connecting github.com:443 from 127.0.0.1:42156
+Connecting github.com:443 from 127.0.0.1:42158
+Connecting avatars1.githubusercontent.com:443 from 127.0.0.1:42164
+Connecting customer-stories-feed.github.com:443 from 127.0.0.1:42176
+Connecting customer-stories-feed.github.com:443 from 127.0.0.1:42180
+Connecting customer-stories-feed.github.com:443 from 127.0.0.1:42184
+Connecting customer-stories-feed.github.com:443 from 127.0.0.1:42188
+Connecting customer-stories-feed.github.com:443 from 127.0.0.1:42190
+Connecting customer-stories-feed.github.com:443 from 127.0.0.1:42192
+Local socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Connecting clients2.google.com:443 from 127.0.0.1:42202
+Connecting clients2.googleusercontent.com:443 from 127.0.0.1:42206
+Connecting www.gstatic.com:443 from 127.0.0.1:42210
+Connecting www.googleapis.com:443 from 127.0.0.1:42218
+Connecting api.github.com:443 from 127.0.0.1:42226
+Connecting github.com:443 from 127.0.0.1:42230
+Local socket: The remote host closed the connection
+Connecting lh5.googleusercontent.com:443 from 127.0.0.1:42234
+Connecting clients4.google.com:443 from 127.0.0.1:42242
+Connecting clients4.google.com:443 from 127.0.0.1:42244
+Local socket: The remote host closed the connection
+Connecting accounts.google.com:443 from 127.0.0.1:42252
+Connecting avatars3.githubusercontent.com:443 from 127.0.0.1:42258
+Local socket: The remote host closed the connection
+Connecting github.com:443 from 127.0.0.1:42266
+Connecting github.com:443 from 127.0.0.1:42268
+Connecting avatars2.githubusercontent.com:443 from 127.0.0.1:42274
+Connecting live.github.com:443 from 127.0.0.1:42290
+Local socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Connecting update.googleapis.com:443 from 127.0.0.1:42310
+Connecting www.gstatic.com:443 from 127.0.0.1:42334
+Remote socket: The remote host closed the connection
+Connecting raw.githubusercontent.com:443 from 127.0.0.1:42480
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Connecting safebrowsing.googleapis.com:443 from 127.0.0.1:42512
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Connecting clients2.google.com:443 from 127.0.0.1:42516
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Connecting update.googleapis.com:443 from 127.0.0.1:42520
+Connecting storage.googleapis.com:80 from 127.0.0.1:42524
+Connecting redirector.gvt1.com:80 from 127.0.0.1:42528
+Connecting r5---sn-i3beln7r.gvt1.com:80 from 127.0.0.1:42532
+Connecting r4---sn-i3belnel.gvt1.com:80 from 127.0.0.1:42536
+Remote socket: The remote host closed the connection
+Connecting r1---sn-i3belne6.gvt1.com:80 from 127.0.0.1:42540
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Connecting www.google.com:443 from 127.0.0.1:42544
+Connecting www.google.com:443 from 127.0.0.1:42546
+Connecting www.google.com:443 from 127.0.0.1:42548
+Connecting lh3.googleusercontent.com:443 from 127.0.0.1:42556
+Connecting www.gstatic.com:443 from 127.0.0.1:42560
+Connecting apis.google.com:443 from 127.0.0.1:42564
+Connecting clients5.google.com:443 from 127.0.0.1:42568
+Connecting accounts.google.com:443 from 127.0.0.1:42572
+Remote socket: The remote host closed the connection
+Connecting id.google.com:443 from 127.0.0.1:42578
+Connecting encrypted-tbn0.gstatic.com:443 from 127.0.0.1:42582
+Connecting www.googleapis.com:443 from 127.0.0.1:42586
+Connecting android.clients.google.com:443 from 127.0.0.1:42606
+Connecting clients1.google.com:443 from 127.0.0.1:42622
+Remote socket: The remote host closed the connection
+Connecting ssl.gstatic.com:443 from 127.0.0.1:42638
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+Remote socket: The remote host closed the connection
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+Local socket: The remote host closed the connection
+Connecting ssl.gstatic.com:443 from 127.0.0.1:42764
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+Remote socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+Connecting ssl.gstatic.com:443 from 127.0.0.1:42768
+Connecting lh3.googleusercontent.com:443 from 127.0.0.1:42770
+Connecting www.gstatic.com:443 from 127.0.0.1:42774
+Connecting apis.google.com:443 from 127.0.0.1:42776
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+Remote socket: The remote host closed the connection
+TCP connection timeout.
+TCP connection timeout.
+Remote socket: The remote host closed the connection
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Remote socket: The remote host closed the connection
+Local socket: The remote host closed the connection
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+Connecting clients4.google.com:443 from 127.0.0.1:42852
+Remote socket: The remote host closed the connection
+Connecting mtalk.google.com:5228 from 127.0.0.1:42860
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
+TCP connection timeout.
