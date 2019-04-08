@@ -19,8 +19,8 @@ import io.netty.util.CharsetUtil;
 * @examp 00 00 10 10 48 10 01 00 10 00 00 00 01 01 00 48 74 65 73 74 31 5f 32 30 31 39 30 33 30 31 5f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 02 00 05 01 03 00 06 01 02 00 05 01 03 00 05
 * @remoteIP 115.159.154.160
 * @author  nesc418
-* @data    2019-3-1
-* @version 0.0.2
+* @data    2019-4-8
+* @version 0.0.3
 */
 public class DataProcessor {
 	private final int LENGTH_ONE_GROUP_ADC = 8;//一组ADC数据有多少个Byte
@@ -28,7 +28,7 @@ public class DataProcessor {
 	private final byte  ADC_CHANNEL_MAX= 4;//adc数据通道最多不超过
 	private final short ADC_BYTES_NUM = 2*ADC_CHANNEL_MAX;//ADC一个周期所占的bytes
 	private final static byte MAX_TEST_NAME = 64;//测试名称长度
-	private final static byte PACKAGE_TIME_IO_LENGTH = 16;//时间、IO、id这些数据的长度
+	private final static byte PACKAGE_TIME_IO_LENGTH = 16;//时间、IO、id、数据类型这些数据的长度
 	private final static byte HEAD_FRAME_LENGTH = MAX_TEST_NAME + PACKAGE_TIME_IO_LENGTH;//一帧的头的长度，包括测试名称、yyyy_mm_dd、headtime、adc_count等
 	private final short CHECK_UBYTE = 15;//校验开始的位置，和headtime的低八位相等
 	
@@ -36,8 +36,12 @@ public class DataProcessor {
 	private final int HEADTIME_START_IDX = 4;//毫秒开始的下标
 	private final int ADC_COUNT_START_IDX = 8;//adc数据量大小开始的下标
 	private final int WIFI_CLIENT_ID_IDX = 12;//这里保存wifi模组的id的下标
-	private final int IO1_IDX = 13;
-	private final int IO2_IDX = 14;
+	private final int IO_IN_IDX = 13;//IO开始的地址，每一位保存一个高低电平
+	private final int DATA_TYPE_IDX = 14; //数据类型，包括CAN数据和ADC数据
+	private final static short CAN_DATA_PACKAGE_LABEL = 1;//CAN数据
+	private final static short ADC_DATA_PACKAGE_LABEL = 2;//ADC数据
+	private final static String CAN_DATA_PACKAGE_STR = "CAN";//CAN数据
+	private final static String ADC_DATA_PACKAGE_STR = "ADC";//ADC数据
 	private final int TEST_NAME_IDX = PACKAGE_TIME_IO_LENGTH;//紧接着time io等
 	
 	private int BytebufLength;
@@ -47,6 +51,7 @@ public class DataProcessor {
 	private long headtime;//毫秒
 	private long adc_count;//数据个数（ADC数据）
 	private short io1,io2;//io数字电平
+	private String dataType;//数据类型 @ref “CAN“ or “ADC“
 	private String testName;//测试名称
 	//MongoDB的数据key
 	public final static String MONGODB_KEY_TESTNAME = "test";//本次测试的名称
@@ -56,6 +61,7 @@ public class DataProcessor {
 	public final static String MONGODB_KEY_ADC_COUNT_SHORT = "adc_count_short";//这里的adc_count_short表示每个channel有多少个short数据 
 	public final static String MONGODB_KEY_IO1 = "io1";//数字通道1
 	public final static String MONGODB_KEY_IO2 = "io2";//数字通道2
+	public final static String MONGODB_KEY_DATA_TYPE = "dataType";//数据类型，包括ADC和CAN
 	public final static String MONGODB_KEY_ADC_VAL = "adc_val";//adc的数值
 	public final static String MONGODB_KEY_RAW_DATA = "raw_data";//原始数据
 	private MyMongoDB mongodb;
@@ -94,6 +100,7 @@ public class DataProcessor {
 				.append(DataProcessor.MONGODB_KEY_ADC_COUNT_SHORT,adc_count / 2 / ADC_CHANNEL_MAX)//ADC数据个数（16位）
 				.append(DataProcessor.MONGODB_KEY_IO1,io1)//数字通道1
 				.append(DataProcessor.MONGODB_KEY_IO2,io2)//数字通道2
+				.append(DataProcessor.MONGODB_KEY_DATA_TYPE, dataType)//数据类型
 				.append(DataProcessor.MONGODB_KEY_TESTNAME,testName)//测试名称
 				.append(DataProcessor.MONGODB_KEY_ADC_VAL,bdoAdcVal )//解析后的ADC数字量
 				.append(DataProcessor.MONGODB_KEY_RAW_DATA,byteRawData );//原始数据
@@ -189,9 +196,16 @@ public class DataProcessor {
 		}
 //		System.out.println("Adc Data Len : "+adc_count);
 		/*获取io电平*/
-		io1 = msg.getUnsignedByte(IO1_IDX);
-		io2 = msg.getUnsignedByte(IO2_IDX);		
+		io1 = (short) (msg.getUnsignedByte(IO_IN_IDX) &  ((short)0x0001));
+		io2 = (short) ((msg.getUnsignedByte(IO_IN_IDX) &  ((short)0x0002))>>1);
 //		System.out.printf("Io1 : %d  Io2 : %d\n",io1,io2);		
+		
+		/*获取数据类型*/
+		if(CAN_DATA_PACKAGE_LABEL == (short) msg.getUnsignedByte(DATA_TYPE_IDX)) {
+			dataType = CAN_DATA_PACKAGE_STR;
+		}else if(ADC_DATA_PACKAGE_LABEL == (short) msg.getUnsignedByte(DATA_TYPE_IDX)) {
+			dataType = ADC_DATA_PACKAGE_STR;
+		}
 		/*获取测试名称*/
 		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
 		msg.getBytes(TEST_NAME_IDX,testNameTemp,DataProcessor.MAX_TEST_NAME);
