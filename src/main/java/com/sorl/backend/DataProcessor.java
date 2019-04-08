@@ -205,6 +205,9 @@ public class DataProcessor {
 			dataType = CAN_DATA_PACKAGE_STR;
 		}else if(ADC_DATA_PACKAGE_LABEL == (short) msg.getUnsignedByte(DATA_TYPE_IDX)) {
 			dataType = ADC_DATA_PACKAGE_STR;
+		}else {
+			System.out.println("Data Type Error : Abandoned");
+			return false;
 		}
 		/*获取测试名称*/
 		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
