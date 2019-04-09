@@ -18,7 +18,7 @@ import io.netty.util.CharsetUtil;
 * [PACKAGE_TIME_IO_LENGTH-1:PACKAGE_TIME_IO_LENGTH+MAX_TEST_NAME-1]：[时间:ADC数据长度:IO:ID:校验码]；
 * @examp 00 00 10 10 48 10 01 00 10 00 00 00 01 01 00 48 74 65 73 74 31 5f 32 30 31 39 30 33 30 31 5f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 02 00 05 01 03 00 06 01 02 00 05 01 03 00 05
 * @remoteIP 115.159.154.160
-* @author  nesc418
+* @author  nesc420
 * @data    2019-4-8
 * @version 0.0.3
 */

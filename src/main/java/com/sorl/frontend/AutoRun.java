@@ -4,7 +4,14 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import com.sorl.backend.App;
-
+/**
+* 
+* Servlet监听接口
+*
+* @author  nesc420
+* @Date    2019-4-7
+* @version 0.1.0
+*/
 public class AutoRun implements ServletContextListener{
 	/**
 	 * tomcat启动后自动运行的方法

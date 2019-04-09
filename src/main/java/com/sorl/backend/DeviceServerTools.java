@@ -11,7 +11,7 @@ import io.netty.buffer.ByteBuf;
 * 
 * 设备服务器工具，包括转发数据给PC上位机。在此之前，需要有TCP连接，即MAP中有上位机同服务器连接的Channel。
 *
-* @author  nesc418
+* @author  nesc420
 * @Date    2018-9-7
 * @version 0.0.1
 */

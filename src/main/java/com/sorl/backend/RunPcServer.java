@@ -37,7 +37,7 @@ import com.sorl.attributes.InfoMgdAttributes;
 * 
 * 运行TCP服务器，用于连接上位机
 *
-* @author  nesc418
+* @author  nesc420
 * @Date    2018-11-16
 * @version 0.2.2
 */
@@ -178,7 +178,7 @@ public class RunPcServer implements Runnable{
 * 
 * TCP服务器的输入处理器函数(ChannelHandler)
 *
-* @author  nesc418
+* @author  nesc420
 * @Date    2018-10-28
 * @version 0.1.1
 */

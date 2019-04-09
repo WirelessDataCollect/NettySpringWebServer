@@ -25,7 +25,7 @@ import io.netty.util.ReferenceCountUtil;
 * 
 * 运行TCP服务器，用于连接上位机
 *
-* @author  nesc418
+* @author  nesc420
 * @Date    2018-8-29
 * @version 0.0.1
 */

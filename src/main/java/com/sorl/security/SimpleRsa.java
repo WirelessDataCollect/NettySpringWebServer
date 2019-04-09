@@ -8,7 +8,7 @@ import java.math.*;
 * 
 * 简单的RSA加密算法
 *
-* @author  nesc418
+* @author  nesc420
 * @Date    2018-10-28
 * @version 0.0.1
 */

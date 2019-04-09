@@ -4,7 +4,7 @@ package com.sorl.signalProcess;
 * 
 * 数字滤波器工具箱
 *
-* @author  nesc418
+* @author  nesc420
 * @Date    2018-11-6
 * @version 0.0.1
 */

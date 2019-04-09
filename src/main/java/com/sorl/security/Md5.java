@@ -7,7 +7,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 * 
 * 双MD5加密用户密码和盐值,md5(md5(密码明文)+salt)
 *
-* @author  nesc418
+* @author  nesc420
 * @Date    2019-1-25
 * @version 0.0.1
 */

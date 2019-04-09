@@ -9,7 +9,7 @@ import io.netty.channel.ChannelHandlerContext;
 * 
 * 通信通道信息
 *
-* @author  nesc418
+* @author  nesc420
 * @Date    2018-11-2
 * @version 0.0.1
 */

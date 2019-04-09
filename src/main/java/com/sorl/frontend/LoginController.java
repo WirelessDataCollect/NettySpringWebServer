@@ -11,6 +11,14 @@ import com.sorl.backend.MyMongoDB;
 import com.sorl.attributes.InfoMgdAttributes;
 import com.sorl.backend.RunPcServer;;
 
+/**
+* 
+* 登录控制器
+*
+* @author  nesc420
+* @Date    2019-4-7
+* @version 0.1.0
+*/
 @Controller
 //@RequestMapping("/ServerWeb")  //控制器WebController中提到的虚拟子文件夹
 public class LoginController{ 
