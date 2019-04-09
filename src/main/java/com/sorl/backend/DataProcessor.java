@@ -23,47 +23,79 @@ import io.netty.util.CharsetUtil;
 * @version 0.0.3
 */
 public class DataProcessor {
-	private final int LENGTH_ONE_GROUP_ADC = 8;//一组ADC数据有多少个Byte
-	private final int  WIFI_CLIENT_ID_MAX= 255;//模组id最大不超过
-	private final byte  ADC_CHANNEL_MAX= 4;//adc数据通道最多不超过
-	private final short ADC_BYTES_NUM = 2*ADC_CHANNEL_MAX;//ADC一个周期所占的bytes
-	private final static byte MAX_TEST_NAME = 64;//测试名称长度
-	private final static byte PACKAGE_TIME_IO_LENGTH = 16;//时间、IO、id、数据类型这些数据的长度
-	private final static byte HEAD_FRAME_LENGTH = MAX_TEST_NAME + PACKAGE_TIME_IO_LENGTH;//一帧的头的长度，包括测试名称、yyyy_mm_dd、headtime、adc_count等
-	private final short CHECK_UBYTE = 15;//校验开始的位置，和headtime的低八位相等
+	//一组ADC数据有多少个Byte，共4个通道，每个通道2个bytes
+	private final int LENGTH_ONE_GROUP_ADC = 8;
+	//一组CAN数据有多少个Byte,1byte用于存储CAN1或者CAN2，19bytes存储数据
+	private final int LENGTH_ONE_GROUP_CAN = 20;
+	//模组id最大不超过
+	private final int  WIFI_CLIENT_ID_MAX= 255;
+	//adc数据通道最多不超过
+	private final byte  ADC_CHANNEL_MAX= 4;
+	//ADC一个周期所占的bytes
+	private final short ADC_BYTES_NUM = 2*ADC_CHANNEL_MAX;
+	//测试名称长度
+	private final static byte MAX_TEST_NAME = 64;
+	//时间、IO、id、数据类型这些数据的长度
+	private final static byte PACKAGE_TIME_IO_LENGTH = 16;
+	//一帧的头的长度，包括测试名称、yyyy_mm_dd、headtime、data_count等
+	private final static byte HEAD_FRAME_LENGTH = MAX_TEST_NAME + PACKAGE_TIME_IO_LENGTH;
+	//校验开始的位置，和headtime的低八位相等
+	private final short CHECK_UBYTE = 15;
+	//年月日开始的下标,下标越大，越高位
+	private final int YYYY_MM_DD_START_IDX = 0;
+	//毫秒开始的下标
+	private final int HEADTIME_START_IDX = 4;
+	//数据量大小开始的下标
+	private final int DATA_COUNT_START_IDX = 8;
+	//这里保存wifi模组的id的下标
+	private final int WIFI_CLIENT_ID_IDX = 12;
+	//IO开始的地址，1byte最多可保存8个IO数据
+	private final int IO_IN_IDX = 13;
 	
-	private final int YYYY_MM_DD_START_IDX = 0;//年月日开始的下标,下标越大，越高位
-	private final int HEADTIME_START_IDX = 4;//毫秒开始的下标
-	private final int ADC_COUNT_START_IDX = 8;//adc数据量大小开始的下标
-	private final int WIFI_CLIENT_ID_IDX = 12;//这里保存wifi模组的id的下标
-	private final int IO_IN_IDX = 13;//IO开始的地址，每一位保存一个高低电平
-	private final int DATA_TYPE_IDX = 14; //数据类型，包括CAN数据和ADC数据
-	private final static short CAN_DATA_PACKAGE_LABEL = 1;//CAN数据
-	private final static short ADC_DATA_PACKAGE_LABEL = 2;//ADC数据
-	private final static String CAN_DATA_PACKAGE_STR = "CAN";//CAN数据
-	private final static String ADC_DATA_PACKAGE_STR = "ADC";//ADC数据
-	private final int TEST_NAME_IDX = PACKAGE_TIME_IO_LENGTH;//紧接着time io等
+	 //数据类型，包括CAN数据和ADC数据
+	private final int DATA_TYPE_IDX = 14;
+	//CAN数据标记
+	private final static short CAN_DATA_PACKAGE_LABEL = 1;
+	//ADC数据标记
+	private final static short ADC_DATA_PACKAGE_LABEL = 2;
+	//CAN数据String标记
+	private final static String CAN_DATA_PACKAGE_STR = "CAN";
+	//ADC数据String标记
+	private final static String ADC_DATA_PACKAGE_STR = "ADC";
+	//测试名称紧接着time io等
+	private final int TEST_NAME_IDX = PACKAGE_TIME_IO_LENGTH;
 	
 	private int BytebufLength;
 	private short checkUbyte;
-	private short nodeId;//设备的id，虽然是short，但是设备以8bits无符号传输，最大255
-	private long yyyy_mm_dd;//年月日
-	private long headtime;//毫秒
-	private long adc_count;//数据个数（ADC数据）
-	private short io1,io2;//io数字电平
-	private String dataType;//数据类型 @ref “CAN“ or “ADC“
-	private String testName;//测试名称
-	//MongoDB的数据key
-	public final static String MONGODB_KEY_TESTNAME = "test";//本次测试的名称
-	public final static String MONGODB_KEY_NODE_ID = "nodeId";//本个设备的名称
-	public final static String MONGODB_KEY_YYYYMMDD = "yyyy_mm_dd";//年月日
-	public final static String MONGODB_KEY_HEADTIME = "headtime";//每天的时间精确到1ms
-	public final static String MONGODB_KEY_ADC_COUNT_SHORT = "adc_count_short";//这里的adc_count_short表示每个channel有多少个short数据 
-	public final static String MONGODB_KEY_IO1 = "io1";//数字通道1
-	public final static String MONGODB_KEY_IO2 = "io2";//数字通道2
-	public final static String MONGODB_KEY_DATA_TYPE = "dataType";//数据类型，包括ADC和CAN
-	public final static String MONGODB_KEY_ADC_VAL = "adc_val";//adc的数值
-	public final static String MONGODB_KEY_RAW_DATA = "raw_data";//原始数据
+	private short nodeId;
+	private long yyyy_mm_dd;
+	private long headtime;
+	private long data_count;
+	private short io1,io2;
+	//数据类型 @ref “CAN“ or “ADC“
+	private String dataType;
+	private String testName;
+	
+	//MongoDB的数据key：本次测试的名称
+	public final static String MONGODB_KEY_TESTNAME = "test";
+	//MongoDB的数据key：本个设备的名称
+	public final static String MONGODB_KEY_NODE_ID = "nodeId";
+	//MongoDB的数据key：年月日
+	public final static String MONGODB_KEY_YYYYMMDD = "yyyy_mm_dd";
+	//MongoDB的数据key：每天的时间精确到1ms
+	public final static String MONGODB_KEY_HEADTIME = "headtime";
+	//MongoDB的数据key：有多少个byte数据 
+	public final static String MONGODB_KEY_DATA_COUNT = "data_count";
+	//MongoDB的数据key：数字通道1
+	public final static String MONGODB_KEY_IO1 = "io1";
+	//MongoDB的数据key：数字通道2
+	public final static String MONGODB_KEY_IO2 = "io2";
+	//MongoDB的数据key：数据类型，包括ADC和CAN
+	public final static String MONGODB_KEY_DATA_TYPE = "dataType";
+	//MongoDB的数据key：adc的数值
+	public final static String MONGODB_KEY_ADC_VAL = "adc_val";
+	//MongoDB的数据key：原始数据
+	public final static String MONGODB_KEY_RAW_DATA = "raw_data";
 	private MyMongoDB mongodb;
 	/**
 	* 数据处理obj的构造函数
@@ -85,26 +117,31 @@ public class DataProcessor {
 	* @throws none
 	*/	
 	public void dataProcess(ByteBuf msg){
-		/*更新帧头的信息*/
+		//更新帧头的信息
 		if(!getFrameHead(msg)) {
 			return;
 		}
-		
-		/*生成document*/
-		BasicDBObject bdoAdcVal = getAdcVal4CH(msg,(short)(adc_count));
 		byte[] byteRawData = new byte[msg.readableBytes()];
 		msg.readBytes(byteRawData);//读取msg，写入到byteRawData
 		Document doc = new Document(DataProcessor.MONGODB_KEY_NODE_ID,nodeId)//该包的节点
 				.append(DataProcessor.MONGODB_KEY_YYYYMMDD, yyyy_mm_dd)//改包的年月日
 				.append(DataProcessor.MONGODB_KEY_HEADTIME,headtime)//改包的起始时间
-				.append(DataProcessor.MONGODB_KEY_ADC_COUNT_SHORT,adc_count / 2 / ADC_CHANNEL_MAX)//ADC数据个数（16位）
 				.append(DataProcessor.MONGODB_KEY_IO1,io1)//数字通道1
 				.append(DataProcessor.MONGODB_KEY_IO2,io2)//数字通道2
+				.append(DataProcessor.MONGODB_KEY_DATA_COUNT,data_count)//数据个数
 				.append(DataProcessor.MONGODB_KEY_DATA_TYPE, dataType)//数据类型
 				.append(DataProcessor.MONGODB_KEY_TESTNAME,testName)//测试名称
-				.append(DataProcessor.MONGODB_KEY_ADC_VAL,bdoAdcVal )//解析后的ADC数字量
 				.append(DataProcessor.MONGODB_KEY_RAW_DATA,byteRawData );//原始数据
-
+		//解析数据
+		if(dataType.equals(ADC_DATA_PACKAGE_STR)) {
+			//生成document
+			BasicDBObject bdoAdcVal = getAdcVal4CH(msg,(short)(data_count));
+			//解析后的ADC数字量
+			doc.append(DataProcessor.MONGODB_KEY_ADC_VAL,bdoAdcVal);
+		}else if(dataType.equals(CAN_DATA_PACKAGE_STR)) {
+			//TODO:(songchaochao,19-4-9,如果是CAN数据则不解析)
+		}
+		
 		/*doc存入数据库*/
 		//mongodb.insertOne已加锁
 		try{
@@ -144,78 +181,75 @@ public class DataProcessor {
 	* @throws 无
 	*/
 	private boolean getFrameHead(ByteBuf msg) {
-		/*得到帧头+实际数据的Bytebuf字节长度*/
+		//得到帧头+实际数据的Bytebuf字节长度
 		BytebufLength = msg.readableBytes();
-		if(BytebufLength<=HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_ADC)
-		{
-			System.out.println("Error : length = "+msg.readableBytes()+
-					", <= SMALLEST LIMIT("+(HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_ADC)+")");
-			return false;
-		}
-		/*获取设备的id*/
+		//获取设备的id
 		nodeId = msg.getUnsignedByte(WIFI_CLIENT_ID_IDX);
 //		System.out.println("Node Id:"+nodeId);
-		
-		/*校验设备的id*/
+		//校验设备的id
 		if((nodeId<0) ||(nodeId>WIFI_CLIENT_ID_MAX)) {
 			System.out.println("NodeId Error : Pkg Abandoned!");
 			return false;
 		}
-		
-		/*获取headtime/微秒*/
+		//获取headtime/微秒
 		headtime = (long)(msg.getUnsignedByte(HEADTIME_START_IDX)|
 				(msg.getUnsignedByte(HEADTIME_START_IDX+1)<<8)|
 				(msg.getUnsignedByte(HEADTIME_START_IDX+2)<<16)|
 				(msg.getUnsignedByte(HEADTIME_START_IDX+3)<<24));
-		
-		/*获取校验byte*/
+		//获取校验byte
 		checkUbyte = msg.getUnsignedByte(CHECK_UBYTE);
-		/*校验位校验，headtime的最低8bits需要和帧头校验位相同*/
+		//校验位校验，headtime的最低8bits需要和帧头校验位相同
 		if(!isRightPkg((short)(headtime&0xff),(short)checkUbyte)){
 			System.out.println("CheckUbyte Error : Pkg Abandoned");
 			return false;
 		}
-		
-		/*获取年月日*/
+		//获取年月日
 		yyyy_mm_dd = (long)(msg.getUnsignedByte(YYYY_MM_DD_START_IDX)|
 				(msg.getUnsignedByte(YYYY_MM_DD_START_IDX+1)<<8)|
 				(msg.getUnsignedByte(YYYY_MM_DD_START_IDX+2)<<16)|
 				(msg.getUnsignedByte(YYYY_MM_DD_START_IDX+3)<<24));
-		/*获取adc数据的byte数目*/
-		adc_count = (long)(msg.getUnsignedByte(ADC_COUNT_START_IDX)|
-				(msg.getUnsignedByte(ADC_COUNT_START_IDX+1)<<8)|
-				(msg.getUnsignedByte(ADC_COUNT_START_IDX+2)<<16)|
-				(msg.getUnsignedByte(ADC_COUNT_START_IDX+3)<<24));
-		/*adc数据个数的校验*/
-//		if((adc_count<0)||(adc_count *LENGTH_ONE_GROUP_ADC) !=(BytebufLength - HEAD_FRAME_LENGTH)) {
-		if((adc_count<0)||(adc_count !=(BytebufLength - HEAD_FRAME_LENGTH))) {
-			    System.out.println(adc_count);
-			    System.out.println(BytebufLength - HEAD_FRAME_LENGTH);
-				System.out.println("Count Error : Abandoned");
+		//获取数据的byte数目
+		data_count = (long)(msg.getUnsignedByte(DATA_COUNT_START_IDX)|
+				(msg.getUnsignedByte(DATA_COUNT_START_IDX+1)<<8)|
+				(msg.getUnsignedByte(DATA_COUNT_START_IDX+2)<<16)|
+				(msg.getUnsignedByte(DATA_COUNT_START_IDX+3)<<24));
+		//数据个数的校验
+		if((data_count<0)||(data_count !=(BytebufLength - HEAD_FRAME_LENGTH))) {
+			System.out.println("Count Error : Abandoned");
 			return false;
 		}
-//		System.out.println("Adc Data Len : "+adc_count);
-		/*获取io电平*/
+		//获取io电平
 		io1 = (short) (msg.getUnsignedByte(IO_IN_IDX) &  ((short)0x0001));
 		io2 = (short) ((msg.getUnsignedByte(IO_IN_IDX) &  ((short)0x0002))>>1);
-//		System.out.printf("Io1 : %d  Io2 : %d\n",io1,io2);		
-		
-		/*获取数据类型*/
+		//获取数据类型，并采取不同的处理措施
 		if(CAN_DATA_PACKAGE_LABEL == (short) msg.getUnsignedByte(DATA_TYPE_IDX)) {
 			dataType = CAN_DATA_PACKAGE_STR;
+			
+			if(BytebufLength<=HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_CAN)
+			{
+				System.out.println("Error : length = "+msg.readableBytes()+
+						", <= SMALLEST LIMIT("+(HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_CAN)+")");
+				return false;
+			}
 		}else if(ADC_DATA_PACKAGE_LABEL == (short) msg.getUnsignedByte(DATA_TYPE_IDX)) {
 			dataType = ADC_DATA_PACKAGE_STR;
+			
+			if(BytebufLength<=HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_ADC)
+			{
+				System.out.println("Error : length = "+msg.readableBytes()+
+						", <= SMALLEST LIMIT("+(HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_ADC)+")");
+				return false;
+			}
 		}else {
 			System.out.println("Data Type Error : Abandoned");
 			return false;
 		}
-		/*获取测试名称*/
+		//获取测试名称
 		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
 		msg.getBytes(TEST_NAME_IDX,testNameTemp,DataProcessor.MAX_TEST_NAME);
 		this.testName = testNameTemp.toString(CharsetUtil.UTF_8);
-//		this.testName = new String(testNameTemp.array());
 		testName = testName.trim();//将最后的空字符去掉
-//		System.out.printf("Test Name : \"%s\" \r\n",this.testName);
+
 		return true;
 	}
 
