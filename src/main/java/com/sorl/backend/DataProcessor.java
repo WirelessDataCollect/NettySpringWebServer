@@ -147,6 +147,7 @@ public class DataProcessor {
 		try{
 			mongodb.insertOne(doc, new SingleResultCallback<Void>() {
 			    public void onResult(final Void result, final Throwable t) {
+			    	///用于指示DOC是否成功插入
 //			    		System.out.println("Document inserted!");
 			    }});			
 		}catch(Exception e) {
@@ -170,13 +171,14 @@ public class DataProcessor {
 		}
 	}
 	/**
-	* 数据包的提取前16bits帧头数据
+	* 数据包的提取前16bits帧头数据和测试名称
 	* 
-	* YYYY_MM_DD:年月日32bits[0:3], HeadTime:毫秒32bits[4:7], count:adc数据长度32bits[8:11], 
+	* YYYY_MM_DD:年月日32bits[0:3], HeadTime:毫秒32bits[4:7], count:数据长度32bits[8:11], 
 	* 
-	* nodeId:模组id8bits[12],IO:数字电平[13:14],checkUbyte:校验8bits[15]
+	* nodeId:模组id8bits[12],IO:数字电平[13],dataType:数据类型[14],checkUbyte:校验8bits[15]
 	*
-	* @param msg 其中的两个校验字节msg[4]和msg[15]，相等才能通过
+	* @param msg 
+	* @note msg的两个校验字节msg[4]和msg[15]，相等才能通过
 	* @return true：成功获取数据帧头;false:数据有问题
 	* @throws 无
 	*/
@@ -203,12 +205,10 @@ public class DataProcessor {
 			System.out.println("CheckUbyte Error : Pkg Abandoned");
 			return false;
 		}
-		//获取年月日
 		yyyy_mm_dd = (long)(msg.getUnsignedByte(YYYY_MM_DD_START_IDX)|
 				(msg.getUnsignedByte(YYYY_MM_DD_START_IDX+1)<<8)|
 				(msg.getUnsignedByte(YYYY_MM_DD_START_IDX+2)<<16)|
 				(msg.getUnsignedByte(YYYY_MM_DD_START_IDX+3)<<24));
-		//获取数据的byte数目
 		data_count = (long)(msg.getUnsignedByte(DATA_COUNT_START_IDX)|
 				(msg.getUnsignedByte(DATA_COUNT_START_IDX+1)<<8)|
 				(msg.getUnsignedByte(DATA_COUNT_START_IDX+2)<<16)|
