@@ -25,8 +25,8 @@ import io.netty.util.CharsetUtil;
 public class DataProcessor {
 	//一组ADC数据有多少个Byte，共4个通道，每个通道2个bytes
 	private final int LENGTH_ONE_GROUP_ADC = 8;
-	//一组CAN数据有多少个Byte,1byte用于存储CAN1或者CAN2，19bytes存储数据
-	private final int LENGTH_ONE_GROUP_CAN = 20;
+	//一组CAN数据有多少个Byte,1byte用于存储CAN1或者CAN2，4bytes存储偏移时间（相对于帧头内保存的时间）,19bytes存储数据
+	private final int LENGTH_ONE_GROUP_CAN = 24;
 	//模组id最大不超过
 	private final int  WIFI_CLIENT_ID_MAX= 255;
 	//adc数据通道最多不超过
