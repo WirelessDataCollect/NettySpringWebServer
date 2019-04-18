@@ -203,6 +203,7 @@ public class DataProcessor {
 		//校验位校验，headtime的最低8bits需要和帧头校验位相同
 		if(!isRightPkg((short)(headtime&0xff),(short)checkUbyte)){
 			System.out.println("CheckUbyte Error : Pkg Abandoned");
+			System.out.printf("headtimeLow8bits = %d  checkUbyte = %d\r\n",(headtime&0xff),checkUbyte);
 			return false;
 		}
 		yyyy_mm_dd = (long)(msg.getUnsignedByte(YYYY_MM_DD_START_IDX)|
@@ -216,6 +217,7 @@ public class DataProcessor {
 		//数据个数的校验
 		if((data_count<0)||(data_count !=(BytebufLength - HEAD_FRAME_LENGTH))) {
 			System.out.println("Count Error : Abandoned");
+			System.out.printf("data_count = %d  (BytebufLength - HEAD_FRAME_LENGTH) = %d\r\n",data_count,(BytebufLength - HEAD_FRAME_LENGTH));
 			return false;
 		}
 		//获取io电平
