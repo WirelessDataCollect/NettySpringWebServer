@@ -62,8 +62,9 @@ public class DataProcessor {
 	private final static String CAN_DATA_PACKAGE_STR = "CAN";
 	//ADC数据String标记
 	private final static String ADC_DATA_PACKAGE_STR = "ADC";
+		
 	//测试名称紧接着time io等
-	private final int TEST_NAME_IDX = PACKAGE_TIME_IO_LENGTH;
+	private final static int TEST_NAME_IDX = PACKAGE_TIME_IO_LENGTH;
 	
 	private int BytebufLength;
 	private short checkUbyte;
@@ -170,6 +171,20 @@ public class DataProcessor {
 			return false;
 		}
 	}
+	
+	/**
+	* 获取测试名称
+	*
+	* @param msg 数据
+	* @return String 测试名称
+	* @throws 无
+	*/
+	public static String getFrameHeadTestName(ByteBuf msg) {
+		//获取测试名称
+		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
+		msg.getBytes(TEST_NAME_IDX,testNameTemp,DataProcessor.MAX_TEST_NAME);
+		return testNameTemp.toString(CharsetUtil.UTF_8).trim();
+	}
 	/**
 	* 数据包的提取前16bits帧头数据和测试名称
 	* 
@@ -203,7 +218,7 @@ public class DataProcessor {
 		//校验位校验，headtime的最低8bits需要和帧头校验位相同
 		if(!isRightPkg((short)(headtime&0xff),(short)checkUbyte)){
 			System.out.println("CheckUbyte Error : Pkg Abandoned");
-			System.out.printf("headtimeLow8bits = %d  checkUbyte = %d\r\n",(headtime&0xff),checkUbyte);
+			System.out.printf(" - headtimeLow8bits = %d  checkUbyte = %d\r\n",(headtime&0xff),checkUbyte);
 			return false;
 		}
 		yyyy_mm_dd = (long)(msg.getUnsignedByte(YYYY_MM_DD_START_IDX)|
@@ -217,7 +232,7 @@ public class DataProcessor {
 		//数据个数的校验
 		if((data_count<0)||(data_count !=(BytebufLength - HEAD_FRAME_LENGTH))) {
 			System.out.println("Count Error : Abandoned");
-			System.out.printf("data_count = %d  (BytebufLength - HEAD_FRAME_LENGTH) = %d\r\n",data_count,(BytebufLength - HEAD_FRAME_LENGTH));
+			System.out.printf(" - data_count = %d  (BytebufLength - HEAD_FRAME_LENGTH) = %d\r\n",data_count,(BytebufLength - HEAD_FRAME_LENGTH));
 			return false;
 		}
 		//获取io电平
@@ -246,12 +261,7 @@ public class DataProcessor {
 			System.out.println("Data Type Error : Abandoned");
 			return false;
 		}
-		//获取测试名称
-		ByteBuf testNameTemp = Unpooled.buffer(DataProcessor.MAX_TEST_NAME);
-		msg.getBytes(TEST_NAME_IDX,testNameTemp,DataProcessor.MAX_TEST_NAME);
-		this.testName = testNameTemp.toString(CharsetUtil.UTF_8);
-		testName = testName.trim();//将最后的空字符去掉
-
+		this.testName = getFrameHeadTestName(msg);
 		return true;
 	}
 

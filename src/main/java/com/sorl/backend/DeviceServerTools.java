@@ -22,10 +22,11 @@ public class DeviceServerTools{
 	 */
 	protected static void send2Pc(ByteBuf temp) {   //这里需要是静态的，非静态依赖对象
 		synchronized(RunPcServer.getChMap()) {
+				String testName = DataProcessor.getFrameHeadTestName(temp);
 				for(Iterator<Map.Entry<String,ChannelAttributes>> item = RunPcServer.getChMap().entrySet().iterator();item.hasNext();) {
 					Map.Entry<String,ChannelAttributes> entry = item.next();
-					//判断是否为实时获取数据的状态
-					if(entry.getValue().getStatus()==ChannelAttributes.DATA_GET_STA) {
+					//判断是否为实时获取数据的状态,且和测试名称对应
+					if((entry.getValue().getStatus()==ChannelAttributes.DATA_GET_STA) && entry.getValue().getTestName().equals(testName)) {
 						ByteBuf temp1 = temp.copy();
 						//发送数据
 						TCP_ServerHandler4PC.writeFlushFuture(entry.getValue().getContext(),temp1.toString());

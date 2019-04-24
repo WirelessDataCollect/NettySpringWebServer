@@ -22,6 +22,7 @@ public class ChannelAttributes {
 	private final ChannelHandlerContext context;
 	private String encryption;//加密算法
 	private String enrypt_salt;
+	private String testName;
 	Integer status;//通道状态
 	
 	/**
@@ -34,6 +35,7 @@ public class ChannelAttributes {
 		this.status = ChannelAttributes.REQUEST_CONNECT_STA;//设置为请求连接状态
 		this.encryption = "Md5";//保存RSA加密算法信息
 		this.enrypt_salt = Md5.getRandStr();//随机初始化salt
+		this.testName = "";
 	}
 	/**
 	 * 返回该通道的状态
@@ -76,5 +78,20 @@ public class ChannelAttributes {
 	 */
 	public ChannelHandlerContext getContext() {
 		return this.context;
+	}	
+	/**
+	 * 返回该通道所做的测试名称
+	 * @return Channel 通道类
+	 */
+	public String getTestName() {
+		return this.testName;
+	}	
+	/**
+	 * 设置测试名称
+	 * @param name 测试名称
+	 * @return None
+	 */
+	public void setTestName(String name) {
+		this.testName = name;
 	}	
 }

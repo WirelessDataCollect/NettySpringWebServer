@@ -184,6 +184,7 @@ public class RunPcServer implements Runnable{
 */
 class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	//优先级高
+	private final static String PC_START_ONE_TEST = "StartTest";
 	private final static String MONGODB_FIND_DOCS = "MongoFindDocs";//获取mongodb中的集合名称
 	private final static String MONGODB_FIND_DOCS_NAMES = "MongoFindDocsNames";//获取mongodb中的集合名称
 	//中等优先级
@@ -208,7 +209,11 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String DONE_SIGNAL_OVER = "OVER";//结束，一般用于，数据发送
 	private final static String DONE_SIGNAL_ERROR = "ERROR";//失败
 	private final static String SEG_CMD_DONE_SIGNAL = SEG_KEY_VALUE;//分割Key:Value,如Login:OK，登录成功。如MongoFindDocs:rllllaw
-
+	//存储测试配置信息
+	public static MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
+	//数据类型
+	public final static String TESTINFOMONGODB_KEY_TESTNAME = "test";
+	public final static String TESTINFOMONGODB_KEY_TESTCONF = "config";
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
@@ -235,12 +240,39 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
+        		
                 //判断cmd类型
                 switch(cmd) {
+                	case TCP_ServerHandler4PC.PC_START_ONE_TEST:
+                		BasicDBObject filterName = new BasicDBObject();
+                		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
+                			//将信息划分为多个filters，实验名称;配置文件
+                			String[] infoStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON,2);
+                			if(infoStr.length < 2) {
+                				break;
+                			}
+                			try {
+                				String testName = infoStr[0];
+                    			String testConfigFile = infoStr[1];
+                    			filterName.put(TESTINFOMONGODB_KEY_TESTNAME, testName);
+                    			//删掉重复的（之前已经有的）
+                    			TCP_ServerHandler4PC.testInfoMongdb.collection.deleteMany(filterName, null);
+                    			//给该PC设置测试名称
+                    			RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setTestName(testName);
+                    			Document doc = new Document(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME,testName)
+                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF, testConfigFile);
+                				mongodb.insertOne(doc, new SingleResultCallback<Void>() {
+                				    public void onResult(final Void result, final Throwable t) {
+                				    	System.out.printf("Test(\"%s\") Config File Saved",testName);
+                				    }});			
+                			}catch(Exception e) {
+                				e.printStackTrace();
+                			}
+                		}              		
+                		break;
                 	case TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES://获取所有的doc的test名称
                 		//filter
             			BasicDBObject filterNames = new BasicDBObject();
-                		//TODO  to test
                 		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
                 			//splitMsg[1]格式    |key:info;key:info;......|
                 			String[] filtersStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON);//将信息划分为多个filters

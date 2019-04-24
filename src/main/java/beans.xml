@@ -22,7 +22,13 @@
    		<property name="dbName" value="data"/>
    		<property name="colName" value="admin"/>
    </bean> 
-
+	<!-- mongodb存储测试配置信息 -->
+   <bean id="testConfMongoDB" class="com.sorl.backend.MyMongoDB"
+   		init-method="init" destroy-method="destroy">  
+   		<property name="dbName" value="udp"/>
+   		<property name="colName" value="config"/>
+   </bean> 
+   
    <bean id="runDeviceServer" class="com.sorl.backend.RunDeviceServer">
        <property name="protocol" value="UDP"/>
        <property name="listenPort" value="5001"/>
