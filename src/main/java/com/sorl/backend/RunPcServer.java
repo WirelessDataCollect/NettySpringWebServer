@@ -242,7 +242,6 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
-        		
                 //判断cmd类型
                 switch(cmd) {
                 	case TCP_ServerHandler4PC.PC_START_ONE_TEST:
@@ -434,11 +433,24 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 						        }			    	
 						    });
                 		break;
+                	case TCP_ServerHandler4PC.PC_WANT_GET_TEST_CONFIG:
+                		String testName = splitMsg[1].trim();
+                		BasicDBObject filter = new BasicDBObject();
+            			filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, testName);
+            			//查找第一个满足testname满足要求的配置文件
+            			testInfoMongdb.collection.find(filter).first(new SingleResultCallback<Document>() {
+	    					@Override
+	    					public void onResult(Document doc, Throwable t) {
+	    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_GET_TEST_CONFIG+
+	                    				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF));
+	    					}	
+	                	});
+                		break;
                 	case TCP_ServerHandler4PC.MONGODB_CREATE_COL://创建collection
                 		//TODO
                 		break;
                 	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA://修改位GetRtData的状态
-            			String testName = splitMsg[1].trim();
+            			testName = splitMsg[1].trim();
             			RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setTestName(testName);
                 		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.DATA_GET_STA);
                 		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_GET_RTDATA+
