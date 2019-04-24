@@ -195,9 +195,23 @@ MongoFindDocs+test:test1_20190121;headtime:8245840
 
 * 关于登录(Login)
 
-```Login+登录用户名;MD5加密数据``` 的MD5加密数据是经过两次MD5加密的。
+`Login+登录用户名;MD5加密数据` 的MD5加密数据是经过两次MD5加密的。
 
 用户密码(UTF-8字符串)  \-\-\-MD5\-\-\-\>  密码密文结合salt  \-\-\-MD5\-\-\-\>  最终密文
+
+* 关于查找配置文件(GetTestConfig)
+
+`GetTestConfig+测试名称` 用于查找测试名称对应的配置文件
+
+eg.
+
+```
+PC端发送：
+GetTestConfig+test1_2019_1_2
+服务器端发送：
+GetTestConfig+配置文件（String格式）
+```
+
 
 # 数据库操作
 
