@@ -227,7 +227,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	System.out.println("Cmd : "+ cmd);
         	System.out.println("SplitMsg Len: "+String.valueOf(splitMsg.length));//输出获取到的信息长度
         	//判断当前上位机状态（未登录、已登录等）
-        	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.DATA_GET_STA) {//实时接收数据的时候不能进行其他操作
+        	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.DATA_GET_STA)) {//实时接收数据的时候不能进行其他操作
         		switch(cmd) {
         			case TCP_ServerHandler4PC.PC_STOP_GET_RTDATA://降级为登录状态
         				TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_STOP_GET_RTDATA+
@@ -238,7 +238,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			default:
         				break;
         		}
-         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.LOGINED_STA) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.LOGINED_STA)) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -468,7 +468,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 	default:
                 		break;
                 }  
-        	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {//连接但还未登录
+        	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.REQUEST_CONNECT_STA)) {//连接但还未登录
         		switch(cmd) {
 	            	case TCP_ServerHandler4PC.PC_WANT_LOGIN://PC想要登录
 	            		String info = splitMsg[1];
