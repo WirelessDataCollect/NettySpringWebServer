@@ -189,6 +189,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String MONGODB_FIND_DOCS_NAMES = "MongoFindDocsNames";//获取mongodb中的集合名称
 	//中等优先级
 	private final static String PC_WANT_LOGIN = "Login";//登录指令
+	private final static String PC_WANT_GET_TEST_CONFIG = "GetTestConfig";//获取测试配置文件
 	private final static String PC_WANT_GET_RTDATA = "GetRtdata";//获取实时数据，必须先login（进入信任区）
 	private final static String PC_STOP_GET_RTDATA = "StopGetRtdata";//停止获取实时数据
 	private final static String MONGODB_CREATE_COL = "MongoCreateCol";//创建一个数据集合，每次实验都要创建
@@ -231,6 +232,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			case TCP_ServerHandler4PC.PC_STOP_GET_RTDATA://降级为登录状态
         				TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_STOP_GET_RTDATA+
         						TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);//发送完毕收到一个通知
+        				RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setTestName("");;
         				RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.LOGINED_STA);
         				break;
         			default:
@@ -262,8 +264,11 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                     			Document doc = new Document(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME,testName)
                     					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF, testConfigFile);
                 				mongodb.insertOne(doc, new SingleResultCallback<Void>() {
+                					@Override
                 				    public void onResult(final Void result, final Throwable t) {
                 				    	System.out.printf("Test(\"%s\") Config File Saved",testName);
+                				    	TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_START_ONE_TEST+
+        	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+DONE_SIGNAL_OK);
                 				    }});			
                 			}catch(Exception e) {
                 				e.printStackTrace();
@@ -433,6 +438,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 		//TODO
                 		break;
                 	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA://修改位GetRtData的状态
+            			String testName = splitMsg[1].trim();
+            			RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setTestName(testName);
                 		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setStatus(ChannelAttributes.DATA_GET_STA);
                 		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_GET_RTDATA+
                 				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
