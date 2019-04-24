@@ -186,7 +186,7 @@ MongoFindDocs+test:test1_20190121;headtime:8245840
 |Login|登录用户名;测试名称|Login:OK\\n|登录用户|
 |StartTest|测试名称;配置文件|StartTest:OK\\n|开始测试，保存配置文件|
 |GetTestConfig|测试名称|GetTestConfig:配置文件|查找配置文件|
-|GetRtdata|测试名称|GetRtdata:OK\\n|获取实时数据|
+|GetRtdata|测试名称|GetRtdata:OK\\n|获取实时数据,改状态下不能进行其他操作，需要先关闭GetRtdata才能进行其他操作|
 |StopGetRtdata|none|StopGetRtdata:OK\\n|停止获取实时数据|
 |HeartBeat|none|HeartBeat:GET\\n|心跳包|
 |Disconnect|none|Disconnect:OK\\n|断开连接|
