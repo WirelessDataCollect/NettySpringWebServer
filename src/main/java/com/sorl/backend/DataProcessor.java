@@ -198,6 +198,7 @@ public class DataProcessor {
 	* @throws 无
 	*/
 	private boolean getFrameHead(ByteBuf msg) {
+			
 		//得到帧头+实际数据的Bytebuf字节长度
 		BytebufLength = msg.readableBytes();
 		//获取设备的id
@@ -232,7 +233,12 @@ public class DataProcessor {
 		//数据个数的校验
 		if((data_count<0)||(data_count !=(BytebufLength - HEAD_FRAME_LENGTH))) {
 			System.out.println("Count Error : Abandoned");
+			
 			System.out.printf(" - data_count = %d  (BytebufLength - HEAD_FRAME_LENGTH) = %d\r\n",data_count,(BytebufLength - HEAD_FRAME_LENGTH));
+			for(int i =0;i<msg.readableBytes();i++) {
+				System.out.print(msg.getUnsignedShort(i));
+			}
+			System.out.println();
 			return false;
 		}
 		//获取io电平
