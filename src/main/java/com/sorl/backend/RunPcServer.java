@@ -12,6 +12,7 @@ import com.mongodb.Block;
 import com.mongodb.async.SingleResultCallback;
 import com.mongodb.async.client.DistinctIterable;
 import com.mongodb.async.client.FindIterable;
+import com.mongodb.client.result.DeleteResult;
 import com.sorl.attributes.ChannelAttributes;
 import com.sorl.security.Md5;
 
@@ -221,7 +222,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	//转化为string
         	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
             //输出信息
-            System.out.println("Recv from PC:"+new String(message.getBytes(CharsetUtil.UTF_8)));
+//            System.out.println("Recv from PC:"+new String(message.getBytes(CharsetUtil.UTF_8)));
         	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO);//将CMD和info分成两段
         	String cmd = splitMsg[0];
         	System.out.println("Cmd : "+ cmd);
@@ -247,32 +248,47 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 	case TCP_ServerHandler4PC.PC_START_ONE_TEST:
                 		BasicDBObject filterName = new BasicDBObject();
                 		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
-                			//将信息划分为多个filters，实验名称;配置文件
-                			String[] infoStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON,2);
-                			if(infoStr.length < 2) {
+                			//将信息划分为多个filters，实验名称;配置文件长度;配置文件
+                			String[] infoStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON,3);
+                			if(infoStr.length < 3) {
                 				break;
                 			}
                 			try {
                 				String testName = infoStr[0];
-                    			String testConfigFile = infoStr[1];
-                    			filterName.put(TESTINFOMONGODB_KEY_TESTNAME, testName);
-                    			//删掉重复的（之前已经有的）
-                    			TCP_ServerHandler4PC.testInfoMongdb.collection.deleteMany(filterName, null);
-                    			//给该PC设置测试名称
-                    			RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setTestName(testName);
-                    			Document doc = new Document(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME,testName)
-                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF, testConfigFile);
-                				mongodb.insertOne(doc, new SingleResultCallback<Void>() {
-                					@Override
-                				    public void onResult(final Void result, final Throwable t) {
-                				    	System.out.printf("Test(\"%s\") Config File Saved",testName);
-                				    	TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_START_ONE_TEST+
-        	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+DONE_SIGNAL_OK);
-                				    }});			
+                				int configFileLen = Integer.parseInt(infoStr[1]);
+                    			String testConfigFile = infoStr[2];
+                    			//长度不正确
+                    			if(configFileLen != testConfigFile.length()) {
+                    				System.out.printf("Test(\\\"%s\\\")'s Config File Len Error: Abandoned\r\n",testName);
+                    				TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_START_ONE_TEST+
+    	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_ERROR);
+                    				break;
+                    			}else {
+	                    			filterName.put(TESTINFOMONGODB_KEY_TESTNAME, testName);
+	                    			//删掉重复的（之前已经有的）
+	                    			TCP_ServerHandler4PC.testInfoMongdb.collection.deleteMany(filterName, new SingleResultCallback<DeleteResult>() {
+	                    				@Override
+										public void onResult(DeleteResult result, Throwable t) {
+	                    					System.out.printf("Find Existed Test(\"%s\")'s Config File : Deleted\r\n",testName);
+	                    				}
+	                    			});
+	                    			//给该PC设置测试名称
+	                    			RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setTestName(testName);
+	                    			Document doc = new Document(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME,testName)
+	                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF, testConfigFile);
+	                    			testInfoMongdb.insertOne(doc, new SingleResultCallback<Void>() {
+	                					@Override
+	                				    public void onResult(final Void result, final Throwable t) {
+	                				    	System.out.printf("Test(\"%s\") Config File Saved\r\n",testName);
+	                				    	System.out.printf(" -Config File Detail : %s\r\n",testConfigFile);
+	                				    	TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_START_ONE_TEST+
+	        	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
+	                				    }});	
+                    			}
                 			}catch(Exception e) {
                 				e.printStackTrace();
                 			}
-                		}              		
+                		}
                 		break;
                 	case TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES://获取所有的doc的test名称
                 		//filter
