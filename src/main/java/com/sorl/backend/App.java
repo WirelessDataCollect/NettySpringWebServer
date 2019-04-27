@@ -2,7 +2,6 @@ package com.sorl.backend;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
 /**
 * 
 * 后端主程序
