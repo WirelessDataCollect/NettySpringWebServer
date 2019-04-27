@@ -112,7 +112,7 @@ public class RunDeviceServer implements Runnable{
             	return;//getProtocolInfo结束
             }
             else {
-            	logger.error("Error:Please input \"TCP\" or \"UDP\"!");
+            	logger.error("Please input \"TCP\" or \"UDP\"!");
             }
 
         }
@@ -179,6 +179,7 @@ public class RunDeviceServer implements Runnable{
 	    	// 等待服务器socket关闭
 	        cf.channel().closeFuture().sync();              
 	    } catch (Exception e) {
+	    	logger.error("",e);
 	        workerGroup.shutdownGracefully();
 	        bossGroup.shutdownGracefully();
 	    }
@@ -190,7 +191,7 @@ public class RunDeviceServer implements Runnable{
 	@Override
 	public void run() {	
 		logger.info("Protocol for devices: "+protocol);
-		logger.info(String.format("Listen port for devices: ", listenPort));
+		logger.info(String.format("Listen port for devices: %d", listenPort));
         switch(protocol) {
         case "UDP":
         	runUdp(listenPort);
