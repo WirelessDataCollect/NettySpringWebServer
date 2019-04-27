@@ -537,7 +537,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     	logger.info(String.format("Channel Num : %d", chMapTemp.size()));
     	String salt = chMapTemp.get(ctx.channel().remoteAddress().toString()).getSalt();
     	TCP_ServerHandler4PC.writeFlushFuture(ctx,"RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt);
-    	System.out.println("RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt);//打印salt
+    	logger.debug("Salt : "+salt);
     	ctx.fireChannelActive();
     }//end of channelActive
 	@Override
@@ -682,7 +682,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			@Override
 			public void operationComplete(ChannelFuture f) {
 				if(!f.isSuccess()) {
-					f.cause().printStackTrace();
+					logger.error("",f.cause());
 				}
 			}
 		});
