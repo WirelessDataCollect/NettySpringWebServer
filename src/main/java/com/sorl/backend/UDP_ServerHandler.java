@@ -6,6 +6,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 
+import org.apache.log4j.Logger;
+
 /**
 * 
 * UDP服务器的输入处理器函数.如果给多个Pipeline,需要给类添加@Sharable
@@ -15,6 +17,7 @@ import io.netty.channel.socket.DatagramPacket;
 * @version 0.0.1
 */
 public class UDP_ServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+	private static final Logger logger = Logger.getLogger(UDP_ServerHandler.class);
 	private DataProcessor processor;
 	UDP_ServerHandler(){
 		processor =(DataProcessor) App.getApplicationContext().getBean("dataProcessor");
@@ -42,8 +45,7 @@ public class UDP_ServerHandler extends SimpleChannelInboundHandler<DatagramPacke
 	 */
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println(
-                "Device UDP channel " + ctx.channel().toString() + " created");
+		logger.info("Device UDP channel " + ctx.channel().toString() + " created");
     }
     /**
      * 当Netty由于IO错误或者处理器在处理事件时抛出异常时调用
@@ -51,7 +53,7 @@ public class UDP_ServerHandler extends SimpleChannelInboundHandler<DatagramPacke
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
             throws Exception {
+    	logger.error("",cause);
         ctx.close();
-        cause.printStackTrace();
     }        
 }
