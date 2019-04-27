@@ -100,7 +100,6 @@ public class RunDeviceServer implements Runnable{
             			}
             			else {
             				logger.info(String.format("Port for Node : %d", this.listenPort));
-            				System.out.println("面向设备运行端口：" + this.listenPort);
             				break;//退出while(得到port)
             			}		
             		}catch(NumberFormatException nfe) {

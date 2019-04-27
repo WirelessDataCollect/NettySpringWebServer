@@ -34,6 +34,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 
 import com.sorl.attributes.InfoMgdAttributes;
+import org.apache.log4j.Logger;
 /**
 * 
 * 运行TCP服务器，用于连接上位机
@@ -48,6 +49,7 @@ public class RunPcServer implements Runnable{
 	private int listenPort = 8080;
 	public Channel ch = null;
 	public final static int MAX_CHANNEL_NUM = 50;	
+	private static final Logger logger = Logger.getLogger(RunPcServer.class);
 	/**
 	 * infoDb 从db中获取信息
 	 */
@@ -63,7 +65,7 @@ public class RunPcServer implements Runnable{
 	 */
 	public void setListenPort(int port) {
 		listenPort = port;
-		System.out.println("Listen port for PC: "+listenPort);
+		logger.info(String.format("Listen port for PC: %d", listenPort));
 	}
 	/**
 	 * 设置线程名称。bean的set方法，bean会自动调用。
@@ -115,7 +117,7 @@ public class RunPcServer implements Runnable{
 			//关闭该通道,并等待future完毕
 			TCP_ServerHandler4PC.ctxCloseFuture(ctx);			
 		}catch(Exception e) {
-			e.printStackTrace();
+			logger.error("",e);
 		}
 
 	}	
@@ -147,7 +149,7 @@ public class RunPcServer implements Runnable{
             ch.closeFuture().sync();      
             
         } catch (Exception e) {//线程会将中断interrupt作为一个终止请求
-            e.printStackTrace();
+        	logger.info("",e);
         } finally {
         	 workerGroup.shutdownGracefully().awaitUninterruptibly();
              bossGroup.shutdownGracefully().awaitUninterruptibly();      	
@@ -158,7 +160,7 @@ public class RunPcServer implements Runnable{
 	 * @return none
 	 */
 	public void start () {
-		System.out.println("Starting " +  threadName );
+		logger.info("Starting " +  threadName);
 		if (t == null) {
 			//运行(this)这个runnable接口下的对象
 			t = new Thread (this, threadName);
@@ -170,7 +172,7 @@ public class RunPcServer implements Runnable{
 	 * @return none
 	 */
 	public void stop () {
-		System.out.println("Stopping " +  threadName );
+		logger.info("Stopping " +  threadName);
 		//当在一个被阻塞的线程(调用sleep或者wait)上调用interrupt时，阻塞调用将会被InterruptedException异常中断
 		t.interrupt();
 	}
@@ -216,17 +218,17 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	//数据类型
 	public final static String TESTINFOMONGODB_KEY_TESTNAME = "test";
 	public final static String TESTINFOMONGODB_KEY_TESTCONF = "config";
+	
+	private static final Logger logger = Logger.getLogger(TCP_ServerHandler4PC.class);
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
         	//转化为string
         	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
-            //输出信息
-//            System.out.println("Recv from PC:"+new String(message.getBytes(CharsetUtil.UTF_8)));
         	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO);//将CMD和info分成两段
         	String cmd = splitMsg[0];
-        	System.out.println("Cmd : "+ cmd);
-        	System.out.println("SplitMsg Len: "+String.valueOf(splitMsg.length));//输出获取到的信息长度
+        	logger.info("Got Cmd : "+ cmd);
+        	logger.debug("Msg Len: "+String.valueOf(splitMsg.length));
         	//判断当前上位机状态（未登录、已登录等）
         	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.DATA_GET_STA)) {//实时接收数据的时候不能进行其他操作
         		switch(cmd) {
@@ -259,7 +261,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                     			String testConfigFile = infoStr[2];
                     			//长度不正确
                     			if(configFileLen != testConfigFile.length()) {
-                    				System.out.printf("Test(\\\"%s\\\")'s Config File Len Error: Abandoned\r\n",testName);
+                    				logger.warn(String.format("Test(\"%s\")'s Config File Len Error: Abandoned", testName));
                     				TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_START_ONE_TEST+
     	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_ERROR);
                     				break;
@@ -269,7 +271,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                    			TCP_ServerHandler4PC.testInfoMongdb.collection.deleteMany(filterName, new SingleResultCallback<DeleteResult>() {
 	                    				@Override
 										public void onResult(DeleteResult result, Throwable t) {
-	                    					System.out.printf("Find Existed Test(\"%s\")'s Config File : Deleted\r\n",testName);
+	                    					logger.info(String.format("Find Existed Test(\"%s\")'s Config File : Deleted\r\n", testName));
 	                    				}
 	                    			});
 	                    			//给该PC设置测试名称
@@ -279,14 +281,14 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                    			testInfoMongdb.insertOne(doc, new SingleResultCallback<Void>() {
 	                					@Override
 	                				    public void onResult(final Void result, final Throwable t) {
-	                				    	System.out.printf("Test(\"%s\") Config File Saved\r\n",testName);
-	                				    	System.out.printf(" -Config File Detail : %s\r\n",testConfigFile);
+	                						logger.info(String.format("Test(\"%s\") Config File Saved", testName));
+	                						logger.info(String.format("-Config File Detail : \r\n  %s", testConfigFile));
 	                				    	TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.PC_START_ONE_TEST+
 	        	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
 	                				    }});	
                     			}
                 			}catch(Exception e) {
-                				e.printStackTrace();
+                				logger.error("",e);
                 			}
                 		}
                 		break;
@@ -295,8 +297,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
             			BasicDBObject filterNames = new BasicDBObject();
                 		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
                 			//splitMsg[1]格式    |key:info;key:info;......|
-                			String[] filtersStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON);//将信息划分为多个filters
-//                			System.out.println("filterStr:"+filtersStr[0]);                			
+                			String[] filtersStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON);//将信息划分为多个filters              			
                  			//缓存filter的上下界
                  			int lowerBound=0;int upperBound=0;
                  			for(String filterStr:filtersStr) {//将过滤信息都put到filter中
@@ -350,20 +351,18 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                	disIter.forEach(new Block<String>() {
 	    					@Override
 	    					public void apply(String name) {
-	    						System.out.printf("\nGet One doc name:%s\n",name);
+	    						logger.debug("\nGet One doc name : "+name);
 	    						//TODO 后期考虑是否全部缓存再flush
 	    						//放到Netty缓存区中，最后在SingleResultCallback中发送
 	    						TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
 	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+name);//发送完毕收到一个通知
-//	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+name+"\n",CharsetUtil.UTF_8));
 	    					}
 	                	},  new SingleResultCallback<Void>() {
 	    					@Override
 	    					public void onResult(Void result, Throwable t) {
 	    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
 	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
-//	    						ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+":"+"Over",CharsetUtil.UTF_8));//发给上位机doc名全部发送完毕
-	    						System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);	    						
+	    						logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);	    						
 	    					}	
 	                	});
 	                	break;
@@ -374,7 +373,6 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 		if(splitMsg.length>1) {//也就是除了cmd还有其他信息（filter信息）
                 			//splitMsg[1]格式    |key:info;key:info;......|
                 			String[] filtersStr = splitMsg[1].split(TCP_ServerHandler4PC.SEG_INFO1_INFON);//将信息划分为多个filters
-//                			System.out.println("filterStr:"+filtersStr[0]);
                  			//缓存filter的上下界
                  			int lowerBound=0;int upperBound=0;
                  			for(String filterStr:filtersStr) {//将过滤信息都put到filter中
@@ -445,7 +443,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 						        	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS+
 						        			TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
 //						        	ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over",CharsetUtil.UTF_8));//发给上位机原始数据
-						            System.out.println(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+						        	logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
 						        }			    	
 						    });
                 		break;
@@ -463,7 +461,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 		    					}	
 		                	});
                 		}catch(Exception e) {
-                			e.printStackTrace();
+                			logger.error("",e);
                 		}
                 		break;
                 	case TCP_ServerHandler4PC.MONGODB_CREATE_COL://创建collection
@@ -477,7 +475,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                     		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_GET_RTDATA+
                     				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
                 		}catch(Exception e){
-                			e.printStackTrace();
+                			logger.error("",e);
                 		}
             			
                 		break;
@@ -488,7 +486,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         		switch(cmd) {
 	            	case TCP_ServerHandler4PC.PC_WANT_LOGIN://PC想要登录
 	            		String info = splitMsg[1];
-	            		System.out.println("Info : "+info);
+	            		logger.debug("Info : "+info);
 	            		//当前状态时请求连接状态而且用户名和密码匹配成功
 	            		loginMd5(ctx,info);
 	                    break;
@@ -514,7 +512,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	}
         } 
         catch(Exception e) {
-        	e.printStackTrace();
+        	logger.error("",e);
         }
         finally {
             // 抛弃收到的数据
@@ -525,7 +523,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		//设置消息队列流量水位，不能太多，否则会造成积压
 		ctx.channel().config().setWriteBufferHighWaterMark(50 * 1024 * 1024);//50MB
-    	System.out.println("PC "+ctx.channel().remoteAddress()+" connected!");
+		logger.info(String.format("PC %s connected!",ctx.channel().remoteAddress()));
     	//通道数太多了
     	Map<String,ChannelAttributes> chMapTemp = RunPcServer.getChMap();
     	synchronized(chMapTemp) {//拥有ch map的锁
@@ -536,7 +534,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	//加入该通道
         	chMapTemp.put(ctx.channel().remoteAddress().toString(), new ChannelAttributes(ctx));  	
     	}
-    	System.out.printf("Now , Channel Num : %d\r\n", chMapTemp.size());
+    	logger.info(String.format("Channel Num : %d", chMapTemp.size()));
     	String salt = chMapTemp.get(ctx.channel().remoteAddress().toString()).getSalt();
     	TCP_ServerHandler4PC.writeFlushFuture(ctx,"RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt);
     	System.out.println("RandStr"+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+salt);//打印salt
@@ -545,14 +543,14 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		RunPcServer.delCh(ctx);
-		System.out.println("PC "+ctx.channel().remoteAddress().toString()+" disconnected!");
-		System.out.printf("Now , Channel Num : %d\r\n", RunPcServer.getChMap().size());
+		logger.info(String.format("PC %s disconnected!",ctx.channel().remoteAddress().toString()));
+		logger.info(String.format("Channel Num : %d", RunPcServer.getChMap().size()));
 		ctx.fireChannelInactive();
 	}
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         // 当出现异常就关闭连接
-        cause.printStackTrace();
+    	logger.error("",cause);
         RunPcServer.delCh(ctx);
     }
 	/**
@@ -571,7 +569,6 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 
 		String[] splitInfo = info.split(TCP_ServerHandler4PC.SEG_INFO1_INFON);
 		String userStr = splitInfo[0];
-//		System.out.println("User Name from pc:"+userStr);//显示从pc获取到的用户名
 		String keyHashStr = splitInfo[1];//md5(md5(key)+salt)
 		//解析加密数值
 		try {
@@ -585,15 +582,16 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			    public void apply(final Document document) {//每个doc所做的操作
 			    	
 			    	//先获取db中user的key
-			    	String key = (String) document.get(InfoMgdAttributes.MONGODB_USER_KEY_KEY);//获取密码
-			    	System.out.println("\nKey in DB: "+key);//查看查询到的密码明文
+			    	String key = (String) document.get(InfoMgdAttributes.MONGODB_USER_KEY_KEY);
+			    	//查看查询到的密码明文
+			    	logger.debug("Key in DB : "+key);
 			    	//计算得到keyHash
 			    	String keyHashStrLocal = Md5.getKeySaltHash(key, salt);
 			    	//打印出收到的keyHash和本地计算出来的keyHash
-			    	System.out.println("Key Hash Remot:"+keyHashStr);
-			    	System.out.println("Key Hash Local:"+keyHashStrLocal);
+			    	logger.debug("Key Hash Remot : "+keyHashStr);
+			    	logger.debug("Key Hash Local:"+keyHashStrLocal);
 			    	if(keyHashStrLocal.toUpperCase().equals(keyHashStr.toUpperCase())){
-			    		System.out.println("Key Correct!");
+			    		logger.info(ctx.channel().remoteAddress().toString()+"'s Key Correct!");
                     	//如果当前状态是请求连接状态，才可以进行下一步
                     	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus()==ChannelAttributes.REQUEST_CONNECT_STA) {
                         	//设置该通道为信任
@@ -603,7 +601,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                     	}
 			    	}
 			    	else {
-			    		System.out.println("Key Incorrect!");
+			    		logger.info(ctx.channel().remoteAddress().toString()+"'s Key Incorrect!");
 			    	}
 			    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
 			        @Override
@@ -618,11 +616,10 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                    	//删除这个通道
 	                    	RunPcServer.delCh(ctx);   	
 	                    }
-			            System.out.println("Mongo Operate Finished!");
 			        }			    	
 			    });
 		}catch(Exception e) {
-			e.printStackTrace();
+			logger.error("",e);
 		}
 
 	}
@@ -645,7 +642,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			@Override
         			public void operationComplete(ChannelFuture f) {
         				if(!f.isSuccess()) {
-        					f.cause().printStackTrace();
+        					logger.error("",f.cause());
         				}
         			}
         		});    		
@@ -667,7 +664,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 				@Override
 				public void operationComplete(ChannelFuture f) {
 					if(!f.isSuccess()) {
-						f.cause().printStackTrace();
+						logger.error("",f.cause());
 					}
 				}
 			});
@@ -680,7 +677,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     public static void ctxCloseFuture(ChannelHandlerContext ctx) {
 		//关闭该通道
 		ChannelFuture future = ctx.close();
-		System.out.println("Get In Close : "+ctx.pipeline().channel().toString());
+		logger.info("Got In Close : "+ctx.pipeline().channel().toString());
     	future.addListener(new ChannelFutureListener(){
 			@Override
 			public void operationComplete(ChannelFuture f) {
