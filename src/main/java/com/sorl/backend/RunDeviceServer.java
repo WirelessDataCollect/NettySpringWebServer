@@ -13,6 +13,8 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+
+import org.apache.log4j.Logger;
 /**
 * 
 * 运行UDP/TCP服务器，用于连接硬件设备
@@ -28,6 +30,7 @@ public class RunDeviceServer implements Runnable{
 	private Thread t;
 	private String threadName = "Device-Thread";
 	private volatile int packsNum = 0;
+	private static final Logger logger = Logger.getLogger(RunDeviceServer.class);
 	/**
 	 * 设置连接设备的端口。bean的set方法，bean会自动调用
 	 * 
@@ -82,25 +85,26 @@ public class RunDeviceServer implements Runnable{
 	* @throws none
 	*/	
 	public void getProtocolInfo(){
-		System.out.println("Choose TCP or UDP?");
+		logger.info("Choose TCP or UDP?");
 		Scanner scan = new Scanner(System.in);
         while (scan.hasNextLine()) {
         	protocol = scan.nextLine().toUpperCase();//支持大小写混写
             if(protocol.equals("TCP")||protocol.equals("UDP")) {
-            	System.out.println("Choose port from 5000~9000...");
+            	logger.info("Choose port from 5000~9000...");
             	while (scan.hasNextLine()) {
             		try{
             			listenPort = Integer.parseInt(scan.nextLine());
             			if(listenPort<5000||listenPort>9000) {//如果超出了这个port界限，则要重新输入
-            				System.out.println("Error:Please input port number from 5000~9000!");
+            				logger.error("Please input port number from 5000~9000!");
             				continue;
             			}
             			else {
+            				logger.info(String.format("Port for Node : %d", this.listenPort));
             				System.out.println("面向设备运行端口：" + this.listenPort);
             				break;//退出while(得到port)
             			}		
             		}catch(NumberFormatException nfe) {
-            			System.out.println("Error:Please input port number from 5000~9000!");
+            			logger.error("Please input port number from 5000~9000!");
             		}
             	}
                 if(scan!=null) {
@@ -109,7 +113,7 @@ public class RunDeviceServer implements Runnable{
             	return;//getProtocolInfo结束
             }
             else {
-            	System.out.println("Error:Please input \"TCP\" or \"UDP\"!");
+            	logger.error("Error:Please input \"TCP\" or \"UDP\"!");
             }
 
         }
@@ -141,7 +145,7 @@ public class RunDeviceServer implements Runnable{
 		ChannelFuture cf= bootstrap.bind(port).sync();
 			cf.channel().closeFuture().sync();
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			logger.error("",e);
 		} finally {
 			eventLoopGroup.shutdownGracefully();//最后一定要释放掉所有资源,并关闭channle
 		}
@@ -186,8 +190,8 @@ public class RunDeviceServer implements Runnable{
 	}  
 	@Override
 	public void run() {	
-    	System.out.println("Protocol for devices: "+protocol);
-    	System.out.println("Listen port for devices: "+listenPort);
+		logger.info("Protocol for devices: "+protocol);
+		logger.info(String.format("Listen port for devices: ", listenPort));
         switch(protocol) {
         case "UDP":
         	runUdp(listenPort);
@@ -196,11 +200,11 @@ public class RunDeviceServer implements Runnable{
         	runTcp(listenPort);
         	break;
         default:
-        	System.out.println("Error:Bad protocal!");
+        	logger.error("Bad protocal");
         }  			
 	}
 	public void start () {
-		System.out.println("Starting " +  threadName );
+		logger.info("Starting " +  threadName);
 		if (t == null) {
 			t = new Thread (this, threadName);
 			t.start ();
@@ -211,7 +215,7 @@ public class RunDeviceServer implements Runnable{
 	 * @return none
 	 */
 	public void stop () {
-		System.out.println("Stopping " +  threadName );
+		logger.info("Stopping " +  threadName);
 		t.interrupt();
 	}	
 }
