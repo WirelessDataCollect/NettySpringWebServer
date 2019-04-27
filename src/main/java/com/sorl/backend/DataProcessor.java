@@ -11,6 +11,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
+import org.apache.log4j.Logger;
+
 /**
 * 
 * @description 数据处理器，用于处理设备50发送到服务器的ByteBuf数据
@@ -25,8 +27,8 @@ import io.netty.util.CharsetUtil;
 public class DataProcessor {
 	//一组ADC数据有多少个Byte，共4个通道，每个通道2个bytes
 	private final int LENGTH_ONE_GROUP_ADC = 8;
-	//一组CAN数据有多少个Byte,1byte用于存储CAN1或者CAN2，4bytes存储偏移时间（相对于帧头内保存的时间）,19bytes存储数据
-	private final int LENGTH_ONE_GROUP_CAN = 24;
+	//一组CAN数据有多少个Byte,1byte用于存储CAN1或者CAN2，4bytes存储偏移时间（相对于帧头内保存的时间）,20bytes存储数据
+	private final int LENGTH_ONE_GROUP_CAN = 25;
 	//模组id最大不超过
 	private final int  WIFI_CLIENT_ID_MAX= 255;
 	//adc数据通道最多不超过
@@ -98,6 +100,7 @@ public class DataProcessor {
 	//MongoDB的数据key：原始数据
 	public final static String MONGODB_KEY_RAW_DATA = "raw_data";
 	private MyMongoDB mongodb;
+	private final static Logger logger = Logger.getLogger(DataProcessor.class);
 	/**
 	* 数据处理obj的构造函数
 	*
@@ -149,10 +152,10 @@ public class DataProcessor {
 			mongodb.insertOne(doc, new SingleResultCallback<Void>() {
 			    public void onResult(final Void result, final Throwable t) {
 			    	///用于指示DOC是否成功插入
-//			    		System.out.println("Document inserted!");
+//			    	logger.info("Document inserted!");
 			    }});			
 		}catch(Exception e) {
-			System.err.println(e);
+			logger.error("", e);
 		}		
 	}
 
@@ -203,10 +206,9 @@ public class DataProcessor {
 		BytebufLength = msg.readableBytes();
 		//获取设备的id
 		nodeId = msg.getUnsignedByte(WIFI_CLIENT_ID_IDX);
-//		System.out.println("Node Id:"+nodeId);
 		//校验设备的id
 		if((nodeId<0) ||(nodeId>WIFI_CLIENT_ID_MAX)) {
-			System.out.println("NodeId Error : Pkg Abandoned!");
+			logger.warn("NodeId Error : Pkg Abandoned!");
 			return false;
 		}
 		//获取headtime/微秒
@@ -218,8 +220,7 @@ public class DataProcessor {
 		checkUbyte = msg.getUnsignedByte(CHECK_UBYTE);
 		//校验位校验，headtime的最低8bits需要和帧头校验位相同
 		if(!isRightPkg((short)(headtime&0xff),(short)checkUbyte)){
-			System.out.println("CheckUbyte Error : Pkg Abandoned");
-			System.out.printf(" - headtimeLow8bits = %d  checkUbyte = %d\r\n",(headtime&0xff),checkUbyte);
+			logger.warn("CheckUbyte Error : Pkg Abandoned");
 			return false;
 		}
 		yyyy_mm_dd = (long)(msg.getUnsignedByte(YYYY_MM_DD_START_IDX)|
@@ -232,13 +233,7 @@ public class DataProcessor {
 				(msg.getUnsignedByte(DATA_COUNT_START_IDX+3)<<24));
 		//数据个数的校验
 		if((data_count<0)||(data_count !=(BytebufLength - HEAD_FRAME_LENGTH))) {
-			System.out.println("Count Error : Abandoned");
-			
-			System.out.printf(" - data_count = %d  (BytebufLength - HEAD_FRAME_LENGTH) = %d\r\n",data_count,(BytebufLength - HEAD_FRAME_LENGTH));
-			for(int i =0;i<msg.readableBytes();i++) {
-				System.out.print(msg.getUnsignedShort(i));
-			}
-			System.out.println();
+			logger.warn("Count Error : Abandoned");
 			return false;
 		}
 		//获取io电平
@@ -247,24 +242,10 @@ public class DataProcessor {
 		//获取数据类型，并采取不同的处理措施
 		if(CAN_DATA_PACKAGE_LABEL == (short) msg.getUnsignedByte(DATA_TYPE_IDX)) {
 			dataType = CAN_DATA_PACKAGE_STR;
-			
-			if(BytebufLength<=HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_CAN)
-			{
-				System.out.println("Error : length = "+msg.readableBytes()+
-						", <= SMALLEST LIMIT("+(HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_CAN)+")");
-				return false;
-			}
 		}else if(ADC_DATA_PACKAGE_LABEL == (short) msg.getUnsignedByte(DATA_TYPE_IDX)) {
 			dataType = ADC_DATA_PACKAGE_STR;
-			
-			if(BytebufLength<=HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_ADC)
-			{
-				System.out.println("Error : length = "+msg.readableBytes()+
-						", <= SMALLEST LIMIT("+(HEAD_FRAME_LENGTH+LENGTH_ONE_GROUP_ADC)+")");
-				return false;
-			}
 		}else {
-			System.out.println("Data Type Error : Abandoned");
+			logger.warn("Data Type Error : Abandoned");
 			return false;
 		}
 		this.testName = getFrameHeadTestName(msg);
@@ -313,12 +294,12 @@ public class DataProcessor {
 	*/	
 	private void printAdcBuf_4Ch(short[][] buf,short idx1,short idx2){
 		try {
-			System.out.printf("ch1: %.5f V   %.5f V\n", 5.0*buf[(byte)0][(short)idx1]/4096.0,5.0*buf[(byte)0][(short)idx2]/4096.0);
-			System.out.printf("ch2: %.5f V   %.5f V\n", 5.0*buf[(byte)1][(short)idx1]/4096.0,5.0*buf[(byte)1][(short)idx2]/4096.0);
-			System.out.printf("ch3: %.5f V   %.5f V\n", 5.0*buf[(byte)2][(short)idx1]/4096.0,5.0*buf[(byte)2][(short)idx2]/4096.0);
-			System.out.printf("ch4: %.5f V   %.5f V\n", 5.0*buf[(byte)3][(short)idx1]/4096.0,5.0*buf[(byte)3][(short)idx2]/4096.0);				
+			logger.debug(String.format("ch1: %.5f V   %.5f V\n", 5.0*buf[(byte)0][(short)idx1]/4096.0,5.0*buf[(byte)0][(short)idx2]/4096.0));
+			logger.debug(String.format("ch2: %.5f V   %.5f V\n", 5.0*buf[(byte)1][(short)idx1]/4096.0,5.0*buf[(byte)1][(short)idx2]/4096.0));
+			logger.debug(String.format("ch3: %.5f V   %.5f V\n", 5.0*buf[(byte)2][(short)idx1]/4096.0,5.0*buf[(byte)2][(short)idx2]/4096.0));
+			logger.debug(String.format("ch4: %.5f V   %.5f V\n", 5.0*buf[(byte)3][(short)idx1]/4096.0,5.0*buf[(byte)3][(short)idx2]/4096.0));						
 		}catch(ArrayIndexOutOfBoundsException a) {  //数组下标越界
-			System.out.println("Exception: ArrayIndexOutOfBoundsException at printAdcBuf_4Ch()");
+			logger.error("", a);
 			return;
 		}
 	
@@ -341,7 +322,6 @@ public class DataProcessor {
 			buf[(byte)(idx % ADC_BYTES_NUM)/2][(short)(idx / ADC_BYTES_NUM)] = 
 					(short)(  (msg.getUnsignedByte(idx + HEAD_FRAME_LENGTH)<<4) | 
 							(msg.getUnsignedByte(idx+HEAD_FRAME_LENGTH+1)>>4) );//>>有符号右移，>>>也可以
-			
 		}
 		return buf;	
 	}
