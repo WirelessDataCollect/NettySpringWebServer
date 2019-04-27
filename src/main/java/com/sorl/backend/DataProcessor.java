@@ -100,7 +100,7 @@ public class DataProcessor {
 	//MongoDB的数据key：原始数据
 	public final static String MONGODB_KEY_RAW_DATA = "raw_data";
 	private MyMongoDB mongodb;
-	private final static Logger logger = Logger.getLogger(DataProcessor.class);
+	private static final Logger logger = Logger.getLogger(DataProcessor.class);
 	/**
 	* 数据处理obj的构造函数
 	*

@@ -41,13 +41,13 @@ public class LoginController{
    //POST：在提交表单时，表达中的参数将作为请求头中的信息发送（显示.../working，和working.jsp没有关系）
    @RequestMapping(value = "/working",method = RequestMethod.POST)  //这里的value指的是地址
    public String login(@ModelAttribute("SpringWeb")Admin admin,ModelMap model) {
-	   MyMongoDB mongo = RunPcServer.getInfoDb();
+	   MyMongoDB infoMongodb = RunPcServer.getInfoDb();
 	   //filter
 	   BasicDBObject filter = new BasicDBObject();
 	   filter.put((String)InfoMgdAttributes.MONGODB_USER_NAME_KEY, (String)admin.getName());
 	   filter.put((String)InfoMgdAttributes.MONGODB_USER_KEY_KEY, (String)admin.getKey());
 	   System.out.println(filter);
-	   Long docIter = mongo.count(filter) ;
+	   Long docIter = infoMongodb.count(filter) ;
 	   if(docIter >= 1) {
 	      model.addAttribute("name", admin.getName());
 	      model.addAttribute("key", admin.getKey());

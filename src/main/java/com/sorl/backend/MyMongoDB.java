@@ -15,6 +15,9 @@ import com.mongodb.async.client.MongoClient;
 import com.mongodb.async.client.MongoClients;
 import com.mongodb.async.client.MongoCollection;
 import com.mongodb.async.client.MongoDatabase;
+
+import org.apache.log4j.Logger;
+
 /**
 * 
 * MongoDB数据库类
@@ -30,6 +33,8 @@ public class MyMongoDB{
 	protected MongoDatabase mongoDatabase;
 	private String colName;
 	private String dbName;
+	
+	private static final Logger logger = Logger.getLogger(MyMongoDB.class);
 	
 	/**
 	 * num 从mongodb中获取到的doc个数
@@ -91,12 +96,9 @@ public class MyMongoDB{
 //			mongoClient = MongoClients.create(); //不同于init，这里不需要再连接mongodb了
 			this.setDbName(dName);//重新设置col名称
 			mongoDatabase = mongoClient.getDatabase(this.dbName);
-			System.out.printf("Connected to db(%s) successfully",this.dbName);	
+			logger.info(String.format("Connected to db.col(%s.%s) successfully", this.dbName,this.colName));
 		}catch(Exception e) {
-			//连接失败的err警告   
-			System.err.printf("Connected to db(%s) unsuccessfully!",this.dbName);
-			//连接失败后，输出当前的连接参数
-			System.err.printf("\tNow params this.dbName,this.colName is %s , %s ",this.dbName,this.colName);
+			logger.error(String.format("Connected to db.col(%s.%s) unsuccessfully", this.dbName,this.colName));
 		}		
 	}
 	/**
@@ -123,12 +125,9 @@ public class MyMongoDB{
 //			mongoClient = MongoClients.create(); //不同于init，这里不需要再连接mongodb了
 			this.setColName(cName);//重新设置col名称
 			collection = mongoDatabase.getCollection(this.colName);
-			System.out.printf("Connected to db.col(%s.%s) successfully",this.dbName,this.colName);	
+			logger.info(String.format("Connected to db.col(%s.%s) successfully", this.dbName,this.colName));	
 		}catch(Exception e) {
-			//连接失败的err警告
-			System.err.printf("Connected to db.col(%s.%s) unsuccessfully!",this.dbName,cName);
-			//连接失败后，输出当前的连接参数
-			System.err.printf("\tNow params this.dbName,this.colName is %s , %s ",this.dbName,this.colName);
+			logger.error(String.format("Connected to db.col(%s.%s) unsuccessfully", this.dbName,this.colName));
 		}		
 	}
 	/**
@@ -141,9 +140,9 @@ public class MyMongoDB{
 			mongoClient = MongoClients.create();
 			mongoDatabase = mongoClient.getDatabase(this.dbName);
 			collection = mongoDatabase.getCollection(this.colName);
-			System.out.printf("Connected to db.col(%s.%s) successfully\n",this.dbName,this.colName);	
+			logger.info(String.format("Connected to db.col(%s.%s) successfully", this.dbName,this.colName));
 		}catch(Exception e) {
-			System.err.println("MongoDB init unsuccessfully!");
+			logger.error("MongoDB init unsuccessfully!");
 		}
 	}
 	/**
@@ -174,7 +173,7 @@ public class MyMongoDB{
 	            @Override
 	            public void onResult(final Long result, final Throwable t) {
 	            	docNum = result;
-			        System.out.println("Find "+result.toString());
+	            	logger.info(String.format("Find %d docs", result.toString()));
 			    }};
 			this.collection.countDocuments(filter, callback);
 			//等待改变
@@ -184,7 +183,7 @@ public class MyMongoDB{
 			docNum = (long) -1;
 			return temp;
 		}catch(Exception e){
-			e.printStackTrace();
+			logger.error("",e);
 		}
 		return (long) 0;
 	}
@@ -197,7 +196,7 @@ public class MyMongoDB{
 		try {
 			return this.collection.find(filter);
 		}catch(Exception e){
-			e.printStackTrace();
+			logger.error("",e);
 		}
 		return null;
 	}
@@ -209,7 +208,7 @@ public class MyMongoDB{
 		try {
 			return this.collection.find();
 		}catch(Exception e){
-			e.printStackTrace();
+			logger.error("",e);
 		}
 		return null;
 	}
