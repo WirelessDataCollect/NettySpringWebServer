@@ -253,6 +253,23 @@ eg.
 db.data.insert({test:"test1_20190121",wifi_client_id:0,yyyy_mm_dd:8245810,headtime:8245850,adc_count_short:2,io1:0,io2:0,adc_val:{ch1:[2676,2726],ch2:[2676,2726],ch3:[2676,2726],ch4:[2676,2726]},raw_data:"rllllaw datasslklks"})
 ```
 
+# 下一步改进
+1、ngnix反向代理
+
+2、HBase数据库存储数据
+
+存储之前进行数据的解析；
+
+ADC和CAN是异构数据，但是存储在HBase中的存储量小
+
+3、MongoDB存储实验和用户信息
+
+实验信息表示，实验名称、开始时间、实验配置信息等
+
+用户信息表示，管理员的名称、密码，可以通过登录实现查看数据
+
+
+
 # 参考
 
 [Netty实战精髓-w3cSchool](https://www.w3cschool.cn/essential_netty_in_action/ "Netty实战精髓-w3cSchool")
