@@ -175,21 +175,23 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ```
 ( [ { \ ^ - $ ** } ] ) ? * + .
 ```
+
+\SPL：表示两个报文间的分隔符，本次使用\t
 ### 数据库查询
 |上位机命令|信息|服务器返回|结束|说明|
 |-|-|-|-|-|
-|MongoFindDocsNames|key1:value1;key2:value2;...|MongoFindDocsNames:xxx\\n|MongoFindDocsNames:OVER\\n|查询所有的doc名称|
-|MongoFindDocs|key1:value1;key2:value2;...|MongoFindDocs:xxx|MongoFindDocs:OVER\\n|根据条件查询doc，并发送给上位机|
+|MongoFindDocsNames|key1:value1;key2:value2;...\\SPL|MongoFindDocsNames:xxx\\n|MongoFindDocsNames:OVER\\n|查询所有的doc名称|
+|MongoFindDocs|key1:value1;key2:value2;...\\SPL|MongoFindDocs:xxx|MongoFindDocs:OVER\\n|根据条件查询doc，并发送给上位机|
 
 ```
 eg.查询所有的doc名称
-MongoFindDocsNames
+MongoFindDocsNames\SPL
 
 eg.查询"yyyy_mm_dd == 8245840"的数据实验名称（test）
-MongoFindDocsNames+yyyy_mm_dd:8245840
+MongoFindDocsNames+yyyy_mm_dd:8245840\SPL
 
 eg.查询"yyyy_mm_dd在日期8245840到8245845"的数据实验名称（test）
-MongoFindDocsNames+yyyy_mm_dd:8245840,8245845
+MongoFindDocsNames+yyyy_mm_dd:8245840,8245845\SPL
 
 其他参数类似，可叠加
 ```
@@ -212,15 +214,16 @@ MongoFindDocs+test:test1_20190121;headtime:8245840
 ```
 
 ### 指令
+
 |上位机命令|信息|服务器返回|说明|
 |-|-|-|-|
-|Login|登录用户名;测试名称|Login:OK\\n|登录用户|
-|StartTest|测试名称;配置文件长度;配置文件|StartTest:OK\\n或者StartTest:ERROR\\n|开始测试，保存配置文件|
-|GetTestConfig|测试名称|GetTestConfig:配置文件|查找配置文件|
-|GetRtdata|测试名称|GetRtdata:OK\\n|获取实时数据,改状态下不能进行其他操作，需要先关闭GetRtdata才能进行其他操作|
-|StopGetRtdata|none|StopGetRtdata:OK\\n|停止获取实时数据|
-|HeartBeat|none|HeartBeat:GET\\n|心跳包|
-|Disconnect|none|Disconnect:OK\\n|断开连接|
+|Login|登录用户名;测试名称\\SPL|Login:OK\\n|登录用户|
+|StartTest|测试名称;配置文件长度;配置文件\\SPL|StartTest:OK\\n或者StartTest:ERROR\\n|开始测试，保存配置文件|
+|GetTestConfig|测试名称|GetTestConfig:配置文件\\SPL|查找配置文件|
+|GetRtdata|测试名称\\SPL|GetRtdata:OK\\n|获取实时数据,改状态下不能进行其他操作，需要先关闭GetRtdata才能进行其他操作|
+|StopGetRtdata|none\\SPL|StopGetRtdata:OK\\n|停止获取实时数据|
+|HeartBeat|none\\SPL|HeartBeat:GET\\n|心跳包|
+|Disconnect|none\\SPL|Disconnect:OK\\n|断开连接|
 
 **说明**
 
@@ -232,15 +235,15 @@ MongoFindDocs+test:test1_20190121;headtime:8245840
 
 * 关于查找配置文件(GetTestConfig)
 
-`GetTestConfig+测试名称` 用于查找测试名称对应的配置文件
+`GetTestConfig+测试名称\SPL` 用于查找测试名称对应的配置文件
 
 eg.
 
 ```
 PC端发送：
-GetTestConfig+test1_2019_1_2
+GetTestConfig+test1_2019_1_2\SPL
 服务器端发送：
-GetTestConfig+配置文件（String格式）
+GetTestConfig+配置文件（String格式）\SPL
 ```
 
 
