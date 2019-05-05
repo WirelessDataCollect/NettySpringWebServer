@@ -176,13 +176,16 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ( [ { \ ^ - $ ** } ] ) ? * + .
 ```
 
-`\SPL`：表示两个报文间的分隔符，本次使用`\t`
+`\SPL`：表示接收两个报文间的分隔符，本次使用`\t`
+
+`\SDSPL`：发送的数据每个都要加`\n`
+
 ### 数据库查询
 |上位机命令|信息|服务器返回|结束|说明|
 |-|-|-|-|-|
-|MongoFindDocsNames|key1:value1;key2:value2;...\\SPL|MongoFindDocsNames:xxx|MongoFindDocsNames:OVER\\n|查询所有的doc名称|
-|MongoFindDocs|key1:value1;key2:value2;...\\SPL|MongoFindDocs:xxx|MongoFindDocs:OVER|根据条件查询doc，并发送给上位机|
-|GetTestConfig|测试名称\\SPL|GetTestConfig:配置文件|GetTestConfig:OVER|查找配置文件|
+|MongoFindDocsNames|key1:value1;key2:value2;...`\SPL`|MongoFindDocsNames:xxx`\SDSPL`|MongoFindDocsNames:OVER`\SDSPL`|查询所有的doc名称|
+|MongoFindDocs|key1:value1;key2:value2;...`\SPL`|MongoFindDocs:xxx`\SDSPL`|MongoFindDocs:OVER`\SDSPL`|根据条件查询doc，并发送给上位机|
+|GetTestConfig|测试名称`\SPL`|GetTestConfig:配置文件`\SDSPL`|GetTestConfig:OVER`\SDSPL`|查找配置文件|
 
 ```
 eg.查询所有的doc名称
@@ -218,12 +221,12 @@ MongoFindDocs+test:test1_20190121;headtime:8245840
 
 |上位机命令|信息|服务器返回|说明|
 |-|-|-|-|
-|Login|登录用户名;测试名称\\SPL|Login:OK|登录用户|
-|StartTest|测试名称;配置文件长度;配置文件\\SPL|StartTest:OK或者StartTest:ERROR|开始测试，保存配置文件|
-|GetRtdata|测试名称\\SPL|GetRtdata:OK|获取实时数据,改状态下不能进行其他操作，需要先关闭GetRtdata才能进行其他操作|
-|StopGetRtdata|none\\SPL|StopGetRtdata:OK|停止获取实时数据|
-|HeartBeat|none\\SPL|HeartBeat:GET|心跳包|
-|Disconnect|none\\SPL|Disconnect:OK|断开连接|
+|Login|登录用户名;测试名称`\SPL`|Login:OK`\SDSPL`|登录用户|
+|StartTest|测试名称;配置文件长度;配置文件`\SPL`|StartTest:OK`\SDSPL`或者StartTest:ERROR`\SDSPL`|开始测试，保存配置文件|
+|GetRtdata|测试名称`\SPL`|GetRtdata:OK`\SDSPL`|获取实时数据,改状态下不能进行其他操作，需要先关闭GetRtdata才能进行其他操作|
+|StopGetRtdata|none`\SPL`|StopGetRtdata:OK`\SDSPL`|停止获取实时数据|
+|HeartBeat|none`\SPL`|HeartBeat:GET`\SDSPL`|心跳包|
+|Disconnect|none`\SPL`|Disconnect:OK`\SDSPL`|断开连接|
 
 **说明**
 

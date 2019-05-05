@@ -210,6 +210,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String SEG_KEY_VALUE = ":";//分割key和calue
 	private final static String SEG_LOWER_UPPER_BOUND = ",";//分割value的上下界
 	private final static String SEG_LIST_BOUND = ",";//分割value的列表，如dataType:CAN,ADC
+	private final static String SEG_TOW_PACK = "\n";
 //	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
 	//给某个命令的返回信息
 	private final static String DONE_SIGNAL_OK = "OK";//成功
@@ -597,7 +598,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 			    	String keyHashStrLocal = Md5.getKeySaltHash(key, salt);
 			    	//打印出收到的keyHash和本地计算出来的keyHash
 			    	logger.debug("Key Hash Remot : "+keyHashStr);
-			    	logger.debug("Key Hash Local:"+keyHashStrLocal);
+			    	logger.debug("Key Hash Local : "+keyHashStrLocal);
 			    	if(keyHashStrLocal.toUpperCase().equals(keyHashStr.toUpperCase())){
 			    		logger.info(ctx.channel().remoteAddress().toString()+"'s Key Correct!");
                     	//如果当前状态是请求连接状态，才可以进行下一步
@@ -607,8 +608,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                     	}else {                	//如果当前已经登录了
                     		//do nothing!
                     	}
-			    	}
-			    	else {
+			    	}else {
 			    		logger.info(ctx.channel().remoteAddress().toString()+"'s Key Incorrect!");
 			    	}
 			    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
@@ -644,7 +644,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     		//如果这个channel没有到达水位的话，还可以写入
         	//水位在active时设置
         	if(ctx.channel().isWritable()) {
-            	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg,CharsetUtil.UTF_8));
+            	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg + TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
               	//等待发送完毕
             	future.addListener(new ChannelFutureListener(){
         			@Override
