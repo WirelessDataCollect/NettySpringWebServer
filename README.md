@@ -180,8 +180,9 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 ### 数据库查询
 |上位机命令|信息|服务器返回|结束|说明|
 |-|-|-|-|-|
-|MongoFindDocsNames|key1:value1;key2:value2;...\\SPL|MongoFindDocsNames:xxx\\n|MongoFindDocsNames:OVER\\n|查询所有的doc名称|
-|MongoFindDocs|key1:value1;key2:value2;...\\SPL|MongoFindDocs:xxx|MongoFindDocs:OVER\\n|根据条件查询doc，并发送给上位机|
+|MongoFindDocsNames|key1:value1;key2:value2;...|MongoFindDocsNames:xxx|MongoFindDocsNames:OVER\\n|查询所有的doc名称|
+|MongoFindDocs|key1:value1;key2:value2;...|MongoFindDocs:xxx|MongoFindDocs:OVER|根据条件查询doc，并发送给上位机|
+|GetTestConfig|测试名称|GetTestConfig:配置文件|GetTestConfig:OVER|查找配置文件|
 
 ```
 eg.查询所有的doc名称
@@ -219,7 +220,6 @@ MongoFindDocs+test:test1_20190121;headtime:8245840
 |-|-|-|-|
 |Login|登录用户名;测试名称\\SPL|Login:OK\\n|登录用户|
 |StartTest|测试名称;配置文件长度;配置文件\\SPL|StartTest:OK\\n或者StartTest:ERROR\\n|开始测试，保存配置文件|
-|GetTestConfig|测试名称|GetTestConfig:配置文件\\SPL|查找配置文件|
 |GetRtdata|测试名称\\SPL|GetRtdata:OK\\n|获取实时数据,改状态下不能进行其他操作，需要先关闭GetRtdata才能进行其他操作|
 |StopGetRtdata|none\\SPL|StopGetRtdata:OK\\n|停止获取实时数据|
 |HeartBeat|none\\SPL|HeartBeat:GET\\n|心跳包|
@@ -270,6 +270,10 @@ ADC和CAN是异构数据，但是存储在HBase中的存储量小
 实验信息表示，实验名称、开始时间、实验配置信息等
 
 用户信息表示，管理员的名称、密码，可以通过登录实现查看数据
+
+4、CMD的解析
+
+CMD解析可以使用Netty自带的解码器(DelimiterBasedFrameDecoder)实现。
 
 
 

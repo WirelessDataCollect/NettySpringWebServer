@@ -52,6 +52,8 @@ public class RunPcServer implements Runnable{
 	public Channel ch = null;
 	public final static int MAX_CHANNEL_NUM = 50;	
 	private static final Logger logger = Logger.getLogger(RunPcServer.class);
+	//分割报文
+	private static final String MsgSPL = "\t";
 	/**
 	 * infoDb 从db中获取信息
 	 */
@@ -136,7 +138,7 @@ public class RunPcServer implements Runnable{
                 @Override
                 protected void initChannel(SocketChannel ch) throws Exception {//起初ch的pipeline会分配一个RunPcServer的出/入站处理器（初始化完成后删除）
                     // 自定义处理类 
-                    ch.pipeline().addLast(new DelimiterBasedFrameDecoder(64 * 1024, Unpooled.copiedBuffer("\t".getBytes())))//换行解码器
+                    ch.pipeline().addLast(new DelimiterBasedFrameDecoder(64 * 1024, Unpooled.copiedBuffer(MsgSPL.getBytes())))//换行解码器
                     .addLast(new TCP_ServerHandler4PC());//如果需要继续添加与之链接的handler，则再次调用addLast即可
                 }//完成初始化后，删除RunPcServer出/入站处理器
             })
@@ -208,7 +210,6 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String SEG_KEY_VALUE = ":";//分割key和calue
 	private final static String SEG_LOWER_UPPER_BOUND = ",";//分割value的上下界
 	private final static String SEG_LIST_BOUND = ",";//分割value的列表，如dataType:CAN,ADC
-	private final static String SEG_TOW_PACK = "\n";//分割两个tcp包，针对粘包现象
 //	private static Md5 md5 = (Md5) App.getApplicationContext().getBean("md5");
 	//给某个命令的返回信息
 	private final static String DONE_SIGNAL_OK = "OK";//成功
@@ -458,8 +459,13 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	            			testInfoMongdb.collection.find(filter).first(new SingleResultCallback<Document>() {
 		    					@Override
 		    					public void onResult(Document doc, Throwable t) {
+		    						if(doc == null) {
+		    							return;
+		    						}
 		    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_GET_TEST_CONFIG+
 		                    				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF));
+		    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_GET_TEST_CONFIG+
+		    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
 		    					}	
 		                	});
                 		}catch(Exception e) {
@@ -638,7 +644,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     		//如果这个channel没有到达水位的话，还可以写入
         	//水位在active时设置
         	if(ctx.channel().isWritable()) {
-            	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg+TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
+            	ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(msg,CharsetUtil.UTF_8));
               	//等待发送完毕
             	future.addListener(new ChannelFutureListener(){
         			@Override
