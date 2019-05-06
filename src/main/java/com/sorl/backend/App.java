@@ -11,8 +11,8 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 * 后端主程序
 *
 * @author  nesc420
-* @Date    2018-9-7
-* @version 0.1.0
+* @Date    2019-5-6
+* @version 0.1.1
 */
 public class App{
 	private static ApplicationContext context;

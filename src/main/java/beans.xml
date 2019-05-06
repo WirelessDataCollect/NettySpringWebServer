@@ -43,6 +43,7 @@
    		init-method="init" destroy-method="destroy">  <!-- 这一段写在dataProcessor的property内部也可以，即注入内部Bean -->
    		<property name="dbName" value="udp"/>
    		<property name="colName" value="data"/>
+   		<property name="indexName" value="test"/>
    </bean> 
    <!-- 测试工具，输出日志 -->
    <bean id="testTools" class="com.sorl.backend.TestTools">

@@ -15,6 +15,7 @@ import com.mongodb.async.client.MongoClient;
 import com.mongodb.async.client.MongoClients;
 import com.mongodb.async.client.MongoCollection;
 import com.mongodb.async.client.MongoDatabase;
+import com.mongodb.client.model.Indexes;
 
 import org.apache.log4j.Logger;
 
@@ -33,6 +34,8 @@ public class MyMongoDB{
 	protected MongoDatabase mongoDatabase;
 	private String colName;
 	private String dbName;
+	//索引
+	private String indexName = "";
 	
 	private static final Logger logger = Logger.getLogger(MyMongoDB.class);
 	
@@ -51,8 +54,22 @@ public class MyMongoDB{
 	 * 获取对象操作的集合
 	 * @return colName：本次操作集合名称
 	 */
-	public String getColname() {
+	public String getColName() {
 		return colName;
+	}
+	/**
+	 * MongoDB数据库的索引
+	 * @param index
+	 */
+	public void setIndexName(String index) {
+		this.indexName = index;
+	}
+	/**
+	 * 获取索引
+	 * @return indexName：索引名称
+	 */
+	public String getIndexName() {
+		return this.indexName;
 	}
 	/**
 	* MongoDB数据库类的设置函数
@@ -140,9 +157,17 @@ public class MyMongoDB{
 			mongoClient = MongoClients.create();
 			mongoDatabase = mongoClient.getDatabase(this.dbName);
 			collection = mongoDatabase.getCollection(this.colName);
+			if(this.getIndexName() != "") {
+				collection.createIndex(Indexes.descending(this.indexName), new SingleResultCallback<String>() {
+					@Override
+					public void onResult(String result, Throwable t) {
+						logger.info(String.format("db.col create index by \"%s\"(indexName_-1)", result));
+					}
+				});
+			}
 			logger.info(String.format("Connected to db.col(%s.%s) successfully", this.dbName,this.colName));
 		}catch(Exception e) {
-			logger.error("MongoDB init unsuccessfully!");
+			logger.error("MongoDB init unsuccessfully!",e);
 		}
 	}
 	/**
