@@ -16,9 +16,9 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 */
 public class App{
 	private static ApplicationContext context;
-	private TestTools test;//工具
 	private RunPcServer pc_server;//面向PC的进程
 	private RunDeviceServer device_server;//面向设备的进程
+	private ScheduledExecutorService testExecutor;
     public App() { 
     	/*获取context*/
     	context = new ClassPathXmlApplicationContext("beans.xml");
@@ -29,9 +29,8 @@ public class App{
     	device_server = (RunDeviceServer)context.getBean("runDeviceServer");
     	device_server.start();  
     	/*获取TestTools类*/
-    	ScheduledExecutorService scheduledExecutorService =
-                Executors.newSingleThreadScheduledExecutor();
-    	scheduledExecutorService.scheduleAtFixedRate((TestTools)context.getBean("testTools"),
+    	testExecutor = Executors.newSingleThreadScheduledExecutor();
+    	testExecutor.scheduleAtFixedRate((TestTools)context.getBean("testTools"),
                 5, 5, TimeUnit.SECONDS);
     }
 	/**
@@ -45,8 +44,8 @@ public class App{
 	 * 获取TestTools
 	 * @return test
 	 */
-	public TestTools getTest() {
-		return this.test;
+	public ScheduledExecutorService getTestExecutor() {
+		return this.testExecutor;
 	}
 	/**
 	 * 获取面向PC的进程
@@ -69,7 +68,7 @@ public class App{
 	public void destroyThreads() {
 		this.getDeviceServer().stop();
 		this.getPcServer().stop();
-		this.getTest().stop();
+		this.getTestExecutor().shutdown();
 	}
 }
 
