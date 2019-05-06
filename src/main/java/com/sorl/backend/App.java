@@ -1,5 +1,9 @@
 package com.sorl.backend;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 /**
@@ -24,9 +28,11 @@ public class App{
     	/*获取RunDeviceServer類*/
     	device_server = (RunDeviceServer)context.getBean("runDeviceServer");
     	device_server.start();  
-    	/*获取TestTools類*/
-    	test = (TestTools)context.getBean("testTools");
-    	test.start();
+    	/*获取TestTools类*/
+    	ScheduledExecutorService scheduledExecutorService =
+                Executors.newSingleThreadScheduledExecutor();
+    	scheduledExecutorService.scheduleAtFixedRate((TestTools)context.getBean("testTools"),
+                5, 5, TimeUnit.SECONDS);
     }
 	/**
 	 * 获取bean的一个应用上下文
@@ -55,6 +61,15 @@ public class App{
 	 */
 	public RunDeviceServer getDeviceServer() {
 		return this.device_server;
+	}
+	/**
+	 * 释放App这个类和线程
+	 * @return none
+	 */
+	public void destroyThreads() {
+		this.getDeviceServer().stop();
+		this.getPcServer().stop();
+		this.getTest().stop();
 	}
 }
 

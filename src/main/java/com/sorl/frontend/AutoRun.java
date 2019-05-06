@@ -30,8 +30,6 @@ public class AutoRun implements ServletContextListener{
 	 * @return none
 	 */
     public void contextDestroyed(ServletContextEvent arg0){
-    	app.getDeviceServer().stop();
-    	app.getPcServer().stop();
-    	app.getTest().stop();
+    	app.destroyThreads();
     }
 }
