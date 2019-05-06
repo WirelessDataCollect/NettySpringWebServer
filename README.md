@@ -147,7 +147,8 @@ PC上位机通过TCP连接服务器8089端口，实施接受经过服务器转�
 ```json
 {
 	"_id" : ObjectId("5c831c7503047748eb06632b"),
-	"test" : "test1_2019-2-2",
+	"test" : "test1_2019-02-02T13:50:23",
+	"isodate" : "2019-02-02T13:50:23"
 	"config" : XXX(String)
 }
 ```
@@ -191,29 +192,17 @@ MongoFindDocs+test:test1_20190121;headtime:8245840,8245840
 eg.查询所有的doc名称
 MongoFindDocsNames\SPL
 
-eg.查询"yyyy_mm_dd == 8245840"的数据实验名称（test）
-MongoFindDocsNames+yyyy_mm_dd:8245840\SPL
+eg.查询"isodate在日期2019-02-02T13:50:23到2019-02-02T14:50:23"的数据实验名称（test）
+MongoFindDocsNames+isodate:2019-02-02T13:50:23,2019-02-02T14:50:23\SPL
 
-eg.查询"yyyy_mm_dd在日期8245840到8245845"的数据实验名称（test）
-MongoFindDocsNames+yyyy_mm_dd:8245840,8245845\SPL
-
-其他参数类似，可叠加
 ```
 
 ```
 eg.获取所有的doc
 MongoFindDocs
 
-eg.获取"测试名称：test1_20190121"，"从日期8245810到8245820的数据"
-MongoFindDocs+test:test1_20190121;yyyy_mm_dd:8245810,8245820
-
-eg.获取"yyyy_mm_dd == 8245840"的数据
-MongoFindDocs+yyyy_mm_dd:8245840
-
-eg.获取"测试名称：test1_20190121"，"从那一天的8245840的数据"
-MongoFindDocs+test:test1_20190121;headtime:8245840
-
-其他参数类似，可叠加
+eg.获取"测试名称：test1_2019-02-02T13:50:23"，"ADC的数据"
+MongoFindDocs+test:test1_2019-02-02T13:50:23;dataType:ADC
 
 ```
 
