@@ -4,12 +4,17 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:task="http://www.springframework.org/schema/task"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
     http://www.springframework.org/schema/context
-    http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd
+    http://www.springframework.org/schema/task
+	http://www.springframework.org/schema/task/spring-task-4.1.xsd"> 
 
 	<context:annotation-config/>  <!-- 基于注解的配置 -->
+   	<context:component-scan base-package="com.sorl.backend" />  <!-- 开启扫描定时任务包 -->
+   	<task:annotation-driven /> 
    	
    <bean id="runPcServer" class="com.sorl.backend.RunPcServer">
        <property name="threadName" value="PC-Thread"/>
@@ -45,9 +50,14 @@
    		<property name="colName" value="data"/>
    		<property name="indexName" value="test"/>
    </bean> 
+   <bean id="generalMgdInterface" class="com.sorl.backend.MyMongoDB"
+   		init-method="init" destroy-method="destroy">  <!-- 这一段写在dataProcessor的property内部也可以，即注入内部Bean -->
+   		<property name="dbName" value="udp"/>
+   		<property name="colName" value="data"/>
+   </bean>   
+   
    <!-- 测试工具，输出日志 -->
-   <bean id="testTools" class="com.sorl.backend.TestTools">
-   </bean>
+   <bean id="testTools" class="com.sorl.backend.TestTools"> </bean>
       <!--<bean id="md5" class="com.nesc.security.Md5">
    </bean>-->   
 </beans>

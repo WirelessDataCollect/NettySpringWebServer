@@ -1,6 +1,10 @@
 package com.sorl.backend;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.Map;
-
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bson.Document;
@@ -10,7 +14,6 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.Block;
 import com.mongodb.async.SingleResultCallback;
-import com.mongodb.async.client.DistinctIterable;
 import com.mongodb.async.client.FindIterable;
 import com.mongodb.client.result.DeleteResult;
 import com.sorl.attributes.ChannelAttributes;
@@ -219,8 +222,9 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	//存储测试配置信息
 	public static MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
 	//数据类型
-	public final static String TESTINFOMONGODB_KEY_TESTNAME = "test";
+	public final static String TESTINFOMONGODB_KEY_TESTNAME = DataProcessor.MONGODB_KEY_TESTNAME;
 	public final static String TESTINFOMONGODB_KEY_ISODATE = "isodate";
+	public final static String TESTINFOMONGODB_KEY_INSERT_ISO_DATE = "insertIsodate";
 	public final static String TESTINFOMONGODB_KEY_TESTCONF = "config";
 	
 	
@@ -282,8 +286,10 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                    			});
 	                    			//给该PC设置测试名称
 	                    			RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).setTestName(testName);
+	                    			
 	                    			Document doc = new Document(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME,testName)
 	                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE, isoDate)
+	                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_INSERT_ISO_DATE, TimeUtils.getStrIsoSTime())
 	                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF, testConfigFile);
 	                    			testInfoMongdb.insertOne(doc, new SingleResultCallback<Void>() {
 	                					@Override

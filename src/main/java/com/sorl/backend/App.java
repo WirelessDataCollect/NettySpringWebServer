@@ -1,5 +1,6 @@
 package com.sorl.backend;
 
+import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -19,16 +20,17 @@ public class App{
 	private RunPcServer pc_server;//面向PC的进程
 	private RunDeviceServer device_server;//面向设备的进程
 	private ScheduledExecutorService testExecutor;
+	
     public App() { 
-    	/*获取context*/
+    	// 获取context
     	context = new ClassPathXmlApplicationContext("beans.xml");
-    	/*获取RunPcServer類*/
+    	// 获取RunPcServer類
     	pc_server = (RunPcServer)context.getBean("runPcServer");
     	pc_server.start();
-    	/*获取RunDeviceServer類*/
+    	// 获取RunDeviceServer類
     	device_server = (RunDeviceServer)context.getBean("runDeviceServer");
     	device_server.start();  
-    	/*获取TestTools类*/
+    	// 获取TestTools类
     	testExecutor = Executors.newSingleThreadScheduledExecutor();
     	testExecutor.scheduleAtFixedRate((TestTools)context.getBean("testTools"),
                 5, 5, TimeUnit.SECONDS);

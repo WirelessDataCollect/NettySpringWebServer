@@ -5,10 +5,10 @@
     http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
 
     <display-name>NescTech Web</display-name>
+    
 	<listener>  
     <listener-class>com.sorl.frontend.AutoRun</listener-class>
 	</listener>  
-	
     <servlet>
         <servlet-name>ServerWeb</servlet-name>
         <servlet-class>

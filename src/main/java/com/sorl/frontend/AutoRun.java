@@ -20,8 +20,9 @@ public class AutoRun implements ServletContextListener{
 	 * @return none
 	 */
 	public App app;
-	public void contextInitialized(ServletContextEvent arg0) {
-		app = new App();//开几个线程
+	public void contextInitialized(ServletContextEvent event) {
+		//开几个线程
+		app = new App();
 	}
 	/**
 	 * tomcat关闭后自动运行的方法

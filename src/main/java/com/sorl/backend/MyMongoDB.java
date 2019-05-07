@@ -40,6 +40,13 @@ public class MyMongoDB{
 	private static final Logger logger = Logger.getLogger(MyMongoDB.class);
 	
 	/**
+	 * 获取mongodb数据库的client
+	 * @return {@link MongoClient}
+	 */
+	public MongoClient getClient() {
+		return this.mongoClient;
+	}
+	/**
 	 * num 从mongodb中获取到的doc个数
 	 */
 	volatile Long docNum=(long) -1;
@@ -55,7 +62,7 @@ public class MyMongoDB{
 	 * @return colName：本次操作集合名称
 	 */
 	public String getColName() {
-		return colName;
+		return this.colName;
 	}
 	/**
 	 * MongoDB数据库的索引
@@ -86,7 +93,7 @@ public class MyMongoDB{
 	 * @return dbName：本次操作
 	 */
 	public String getDbName() {
-		return dbName;
+		return this.dbName;
 	}
 
 	/**

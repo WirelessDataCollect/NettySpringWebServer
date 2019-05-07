@@ -11,6 +11,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -73,6 +79,10 @@ public class DataProcessor {
 	private short nodeId;
 	private long yyyy_mm_dd;
 	private long headtime;
+	//从testName获取的iso时间
+	private String isodate;
+	//插入文档时候的iso时间
+	private String insertIsodate;
 	private long data_count;
 	private short io1,io2;
 	//数据类型 @ref “CAN“ or “ADC“
@@ -87,6 +97,10 @@ public class DataProcessor {
 	public final static String MONGODB_KEY_YYYYMMDD = "yyyy_mm_dd";
 	//MongoDB的数据key：每天的时间精确到1ms
 	public final static String MONGODB_KEY_HEADTIME = "headtime";
+	//MongoDB的数据的iso时间
+	public final static String MONGODB_KEY_ISO_DATE = "isodate";
+	//MongoDB的数据的iso时间
+	public final static String MONGODB_KEY_INSERT_ISO_DATE = "insertIsodate";
 	//MongoDB的数据key：有多少个byte数据 
 	public final static String MONGODB_KEY_DATA_COUNT = "data_count";
 	//MongoDB的数据key：数字通道1
@@ -130,6 +144,8 @@ public class DataProcessor {
 		Document doc = new Document(DataProcessor.MONGODB_KEY_NODE_ID,nodeId)//该包的节点
 				.append(DataProcessor.MONGODB_KEY_YYYYMMDD, yyyy_mm_dd)//改包的年月日
 				.append(DataProcessor.MONGODB_KEY_HEADTIME,headtime)//改包的起始时间
+				.append(DataProcessor.MONGODB_KEY_ISO_DATE,isodate)//iso时间，从testName中获取
+				.append(DataProcessor.MONGODB_KEY_INSERT_ISO_DATE, insertIsodate)//插入文档的时间
 				.append(DataProcessor.MONGODB_KEY_IO1,io1)//数字通道1
 				.append(DataProcessor.MONGODB_KEY_IO2,io2)//数字通道2
 				.append(DataProcessor.MONGODB_KEY_DATA_COUNT,data_count)//数据个数
@@ -249,6 +265,16 @@ public class DataProcessor {
 			return false;
 		}
 		this.testName = getFrameHeadTestName(msg);
+		String[] testNamSplitStr = testName.split("/",2);
+		//测试名称错误
+		if(testNamSplitStr.length < 2) {
+			logger.warn("ISO Time in TestName Error : Abandoned");
+			return false;
+		}else {//测试名称没有错误，包含iso时间
+			this.isodate = (testName.split("/",2))[1];
+		}
+		//今日日期
+		this.insertIsodate = TimeUtils.getStrIsoSTime();
 		return true;
 	}
 
