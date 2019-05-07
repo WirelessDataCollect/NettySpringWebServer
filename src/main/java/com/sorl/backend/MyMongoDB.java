@@ -157,7 +157,7 @@ public class MyMongoDB{
 			mongoClient = MongoClients.create();
 			mongoDatabase = mongoClient.getDatabase(this.dbName);
 			collection = mongoDatabase.getCollection(this.colName);
-			if(this.getIndexName() != "") {
+			if(!this.getIndexName().equals("")) {
 				collection.createIndex(Indexes.descending(this.indexName), new SingleResultCallback<String>() {
 					@Override
 					public void onResult(String result, Throwable t) {
