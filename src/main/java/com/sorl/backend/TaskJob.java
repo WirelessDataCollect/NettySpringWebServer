@@ -120,6 +120,7 @@ public class TaskJob{
 			logger.error("",e);
 		} 
 	}
+	//每个月都要清除
 	@Scheduled(cron="* * * 1 * *")  //每个月清除一次
 	public void mgdClearByInsertIsodate() {
 		try {
@@ -160,50 +161,11 @@ public class TaskJob{
 								generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
 									@Override
 									public void onResult(final DeleteResult result, final Throwable t) {
-										logger.info(String.format("Cleared %d configurations", result.getDeletedCount()));
+										logger.info(String.format("Cleared %d documents", result.getDeletedCount()));
 									}
 					        	});
 							}
 			        	});
-						
-						//设置指向配置文件的col
-						generalMgdInterface.resetCol(testInfoMongdb.getColName());
-						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter);
-						//设置指向数据的col
-						generalMgdInterface.resetCol(dataMgd.getColName());
-						
-						findIter.forEach(new Block<Document>() {
-							@Override
-							public void apply(Document doc) {
-								try {
-									logger.info(String.format("for each db.col(%s.%s) ", generalMgdInterface.getDbName(),generalMgdInterface.getColName()));
-									String testName = (String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME);
-									//删除ADC和CAN数据
-									generalMgdInterface.collection.deleteMany(new BasicDBObject(DataProcessor.MONGODB_KEY_TESTNAME,testName), new SingleResultCallback<DeleteResult>() {
-										@Override
-										public void onResult(final DeleteResult result, final Throwable t) {
-											logger.info(String.format("Cleared db.col(%s.%s) %d documents by test(%s)", generalMgdInterface.getDbName(),generalMgdInterface.getColName(),result.getDeletedCount(),testName));
-										}	
-						        	});
-								}catch(Exception e) {
-									logger.info("",e);
-								}
-							}
-			        	},  new SingleResultCallback<Void>() {
-							@Override
-							public void onResult(Void result, Throwable t) {
-								 logger.info("Cleared 30-day-before datas");
-								 //删除config数据，需要改变generalMgdInterface，所以必须在上一步结束后进行
-								 generalMgdInterface.resetCol(testInfoMongdb.getColName());
-								 generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
-									@Override
-									public void onResult(final DeleteResult result, final Throwable t) {
-										logger.info(String.format("Cleared %d configurations", result.getDeletedCount()));
-									}
-					        	});
-							}
-			        	});
-						
 						if(sess != null) {
 							sess.commitTransaction(new SingleResultCallback<Void>() {
 								@Override
