@@ -392,26 +392,24 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //                		}  
                 		projections = new BasicDBObject();
 						projections.append(DataProcessor.MONGODB_KEY_RAW_DATA, 1).append("_id", 0);
-                		FindIterable<Document> docIter = mongodb.collection.find(filterDocs) ;
+                		FindIterable<Document> docIter = mongodb.collection.find(filterDocs).projection(projections) ;
              			docIter.forEach(new Block<Document>() {
 						    @Override
 						    public void apply(final Document document) {//每个doc所做的操作
-						    	ByteBuf rawDataEncoded = null;
 						    	try {
 						    		ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
 						    		Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA); 
 							    	byte[] rawDataByte = rawDataBin.getData();
-							    	rawDataEncoded = ctx.alloc().buffer(4 * rawDataByte.length);//分配空间
-							    	rawDataEncoded.writeBytes(rawDataByte);
-							    	TCP_ServerHandler4PC.writeFlushFuture(ctx,rawDataEncoded);//发给上位机原始数据
+//							    	rawDataEncoded = ctx.alloc().buffer(4 * rawDataByte.length);//分配空间
+//							    	rawDataEncoded.writeBytes(rawDataByte);
+//							    	logger.info(String.format("rawDataEncoded ref : %d", rawDataEncoded.refCnt()));
+							    	TCP_ServerHandler4PC.writeFlushFuture(ctx,Unpooled.wrappedBuffer(rawDataByte));//发给上位机原始数据
 						    	}catch(Exception e) {
 						    		logger.error("",e);
 						    	}finally {
-						    		//释放内存
-						    		rawDataEncoded.release();
 						    	}
 						    	
-						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作
+						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作 	
 						        @Override
 						        public void onResult(final Void result, final Throwable t) {
 						        	//TODO
@@ -630,6 +628,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	}    		
     	}
     }
+
     /**
      * 发送信息并等待成功
      * @param ctx 通道ctx
