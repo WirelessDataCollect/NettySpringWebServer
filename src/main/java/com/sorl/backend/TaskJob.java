@@ -19,7 +19,7 @@ import com.mongodb.client.result.DeleteResult;
 
 /**
 * 
-* MongoDB的历史数据清空指令，通过quartz每天调用
+* 部分周期性执行任务
 *
 * @author  nesc420
 * @Date    2019-5-7
@@ -28,12 +28,19 @@ import com.mongodb.client.result.DeleteResult;
 @Component("taskJob")
 public class TaskJob{
 	private final static Logger logger = Logger.getLogger(TestTools.class);
+	//清除60天前的数据
 	private final static int DAYS_BEFORE_TODAY = -60;
 	//配置任务的执行时间，可以配置多个
-	private final static String hms = "T04:00:00";
+	private final static String hms4MgdClearByIsodate = "T04:00:00";
+	/**
+	 * 基于从testName提取出来的isodate为基础，进行数据清除
+	 * 
+	 * @return none
+	 */
 	@Scheduled(cron="* * 4 * * ?")  //凌晨4点执行数据库清空指令（DAYS_BEFORE_TODAY天之前的数据）
-	public void mgdClear() {
+	public void mgdClearByIsodate() {
 		try {
+			logger.info("mgdClearByIsodate Start Clearing 30-day-before datas and configurations");
 			MyMongoDB generalMgdInterface = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
 			MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
 			MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -49,14 +56,13 @@ public class TaskJob{
 						sess.startTransaction();
 					}
 					try {
-						logger.info("Start Clearing 30-day-before datas and configurations");
 						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 						//今日日期
 						Calendar calendar=new GregorianCalendar();
-						logger.info(String.format("Date today ： " + sdf.format(calendar.getTime()) + hms));
+						logger.info(String.format("Date today ： " + sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByIsodate));
 						//30天前的日期
 						calendar.add(Calendar.DATE, TaskJob.DAYS_BEFORE_TODAY); 
-						String upperBound = sdf.format(calendar.getTime()) + hms;
+						String upperBound = sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByIsodate;
 						logger.info(String.format("Date before 30 days ： " + upperBound));
 						BasicDBObject filter = new BasicDBObject();
 						filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE, new BasicDBObject("$lte",upperBound));
@@ -120,10 +126,13 @@ public class TaskJob{
 			logger.error("",e);
 		} 
 	}
+	//配置任务的执行时间，可以配置多个
+	private final static String hms4MgdClearByInsertIsodate = "T04:00:00";
 	//每个月都要清除
-	@Scheduled(cron="* * * 1 * *")  //每个月清除一次
+	@Scheduled(cron="* * 3 1 * ?")  //每个月1号凌晨3点清除一次
 	public void mgdClearByInsertIsodate() {
 		try {
+			logger.info("mgdClearByInsertIsodate Start Clearing 30-day-before datas and configurations");
 			MyMongoDB generalMgdInterface = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
 			MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
 			MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -139,14 +148,13 @@ public class TaskJob{
 						sess.startTransaction();
 					}
 					try {
-						logger.info("Start Clearing 30-day-before datas and configurations");
 						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 						//今日日期
 						Calendar calendar=new GregorianCalendar();
-						logger.info(String.format("Date today ： " + sdf.format(calendar.getTime()) + hms));
+						logger.info(String.format("Date today ： " + sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByInsertIsodate));
 						//30天前的日期
 						calendar.add(Calendar.DATE, TaskJob.DAYS_BEFORE_TODAY); 
-						String upperBound = sdf.format(calendar.getTime()) + hms;
+						String upperBound = sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByInsertIsodate;
 						logger.info(String.format("Date before 30 days ： " + upperBound));
 						BasicDBObject filter = new BasicDBObject();
 						filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE, new BasicDBObject("$lte",upperBound));
@@ -188,8 +196,4 @@ public class TaskJob{
 			logger.error("",e);
 		} 
 	}
-//	@Scheduled(cron="5/5 * * * * ?")
-//	public void dispJob() {
-//		logger.info("disp Job ok");
-//	}
 }

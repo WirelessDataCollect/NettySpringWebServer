@@ -4,7 +4,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.TimeZone;
+//import java.util.TimeZone;
 
 /**
 * 
@@ -22,9 +22,9 @@ public class TimeUtils {
 	public static String getStrIsoSTime() {
 		//今日日期
 		Calendar calendar = new GregorianCalendar();
-		TimeZone tz = TimeZone.getTimeZone("Asia/Shanghai");
+//		TimeZone tz = TimeZone.getTimeZone("Asia/Shanghai");
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); 
-		df.setTimeZone(tz);
+//		df.setTimeZone(tz);
 		return df.format(calendar.getTime());
 	}
 }
