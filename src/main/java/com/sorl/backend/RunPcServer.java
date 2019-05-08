@@ -400,22 +400,16 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 						    		ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
 						    		Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA); 
 							    	byte[] rawDataByte = rawDataBin.getData();
-//							    	rawDataEncoded = ctx.alloc().buffer(4 * rawDataByte.length);//分配空间
-//							    	rawDataEncoded.writeBytes(rawDataByte);
-//							    	logger.info(String.format("rawDataEncoded ref : %d", rawDataEncoded.refCnt()));
 							    	TCP_ServerHandler4PC.writeFlushFuture(ctx,Unpooled.wrappedBuffer(rawDataByte));//发给上位机原始数据
 						    	}catch(Exception e) {
 						    		logger.error("",e);
-						    	}finally {
-						    	}
-						    	
+						    	}						    	
 						    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作 	
 						        @Override
 						        public void onResult(final Void result, final Throwable t) {
 						        	//TODO
 						        	TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS+
 						        			TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
-//						        	ctx.writeAndFlush(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":"+"Over",CharsetUtil.UTF_8));//发给上位机原始数据
 						        	logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
 						        }			    	
 						    });
