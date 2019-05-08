@@ -36,8 +36,6 @@ public class TestTools implements Runnable{
 	}
 	/**
 	 * 关闭TestTools对象的线程
-	 * 
-	 *	
 	 * @return none
 	 */
 	public void stop () {

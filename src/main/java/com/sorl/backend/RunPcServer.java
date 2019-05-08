@@ -224,7 +224,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	//数据类型
 	public final static String TESTINFOMONGODB_KEY_TESTNAME = DataProcessor.MONGODB_KEY_TESTNAME;
 	public final static String TESTINFOMONGODB_KEY_ISODATE = "isodate";
-	public final static String TESTINFOMONGODB_KEY_INSERT_ISO_DATE = "insertIsodate";
+	public final static String TESTINFOMONGODB_KEY_INSERT_ISO_DATE = DataProcessor.MONGODB_KEY_INSERT_ISO_DATE;
 	public final static String TESTINFOMONGODB_KEY_TESTCONF = "config";
 	
 	
@@ -232,6 +232,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
+        	BasicDBObject projections = null;
         	//转化为string
         	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
         	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO);//将CMD和info分成两段
@@ -280,7 +281,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                    			//删掉重复的（之前已经有的）
 	                    			TCP_ServerHandler4PC.testInfoMongdb.collection.deleteMany(filterName, new SingleResultCallback<DeleteResult>() {
 	                    				@Override
-										public void onResult(DeleteResult result, Throwable t) {
+										public void onResult(final DeleteResult result, final Throwable t) {
 	                    					logger.info(String.format("Find Existed Test(\"%s\")'s Config File : Deleted\r\n", testName));
 	                    				}
 	                    			});
@@ -333,6 +334,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                  			}//end of for
                 		}
                 		//根据过滤信息来获取实验名称
+                		projections = new BasicDBObject();
+						projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, 1).append("_id", 0);
                 		FindIterable<Document> findIter = testInfoMongdb.collection.find(filters);	                	
                 		findIter.forEach(new Block<Document>() {
 	    					@Override
@@ -350,7 +353,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	    					}
 	                	},  new SingleResultCallback<Void>() {
 	    					@Override
-	    					public void onResult(Void result, Throwable t) {
+	    					public void onResult(final Void result, final Throwable t) {
 	    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
 	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
 	    						logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);	    						
@@ -387,6 +390,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 //                			TCP_ServerHandler4PC.writeFlushFuture(ctx,"Please input filter info");
 ////                			ctx.writeAndFlush(Unpooled.copiedBuffer("Please input filter info",CharsetUtil.UTF_8));//请输入查询过滤器信息
 //                		}  
+                		projections = new BasicDBObject();
+						projections.append(DataProcessor.MONGODB_KEY_RAW_DATA, 1).append("_id", 0);
                 		FindIterable<Document> docIter = mongodb.collection.find(filterDocs) ;
              			docIter.forEach(new Block<Document>() {
 						    @Override
@@ -423,9 +428,11 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                		BasicDBObject filter = new BasicDBObject();
 	            			filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, testName);
 	            			//查找第一个满足testname满足要求的配置文件
+	            			projections = new BasicDBObject();
+							projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF, 1).append("_id", 0);
 	            			testInfoMongdb.collection.find(filter).first(new SingleResultCallback<Document>() {
 		    					@Override
-		    					public void onResult(Document doc, Throwable t) {
+		    					public void onResult(final Document doc, final Throwable t) {
 		    						if(doc == null) {
 		    							return;
 		    						}

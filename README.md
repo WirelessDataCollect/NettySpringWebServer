@@ -93,6 +93,7 @@ PC上位机通过TCP连接服务器8089端口，实施接受经过服务器转�
 	"yyyy_mm_dd" : NumberLong(0),
 	"headtime" : NumberLong(1298),
 	"isodate" : "2019-05-05T12:00:00",
+	"insertIsodate" : "2019-05-05T11:59:59",
 	"io1" : 0,
 	"io2" : 0,
 	"data_count" : NumberLong(67),
@@ -134,6 +135,7 @@ PC上位机通过TCP连接服务器8089端口，实施接受经过服务器转�
 	"yyyy_mm_dd" : NumberLong(0),
 	"headtime" : NumberLong(1298),
 	"isodate" : "2019-05-05T12:00:00",
+	"insertIsodate" : "2019-05-05T11:59:59",
 	"io1" : 0,
 	"io2" : 0,
 	"data_count" : NumberLong(67),
@@ -151,6 +153,7 @@ PC上位机通过TCP连接服务器8089端口，实施接受经过服务器转�
 	"_id" : ObjectId("5c831c7503047748eb06632b"),
 	"test" : "test1_2019-02-02T13:50:23",
 	"isodate" : "2019-02-02T13:50:23"
+	"insertIsodate" : "2019-05-05T11:59:59",
 	"config" : XXX(String)
 }
 ```

@@ -1,5 +1,6 @@
 package com.sorl.backend;
 
+import static com.mongodb.client.model.Filters.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,7 @@ import com.mongodb.client.result.DeleteResult;
 */
 @Component("taskJob")
 public class TaskJob{
-	private final static Logger logger = Logger.getLogger(TestTools.class);
+	private final static Logger logger = Logger.getLogger(TaskJob.class);
 	//清除60天前的数据
 	private final static int DAYS_BEFORE_TODAY = -60;
 	//配置任务的执行时间，可以配置多个
@@ -40,14 +41,14 @@ public class TaskJob{
 	@Scheduled(cron="* * 4 * * ?")  //凌晨4点执行数据库清空指令（DAYS_BEFORE_TODAY天之前的数据）
 	public void mgdClearByIsodate() {
 		try {
-			logger.info("mgdClearByIsodate Start Clearing 30-day-before datas and configurations");
+			logger.info("mgdClearByIsodate Start Clearing N-day-before datas and configurations");
 			MyMongoDB generalMgdInterface = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
 			MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
 			MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
 		
 			generalMgdInterface.getClient().startSession(new SingleResultCallback<ClientSession>() {
 				@Override
-				public void onResult(ClientSession sess, Throwable t) {
+				public void onResult(final ClientSession sess, final Throwable t) {
 					if(t != null) {
 						logger.warn("StartSession Throwable is not null",t);
 					}
@@ -60,29 +61,33 @@ public class TaskJob{
 						//今日日期
 						Calendar calendar=new GregorianCalendar();
 						logger.info(String.format("Date today ： " + sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByIsodate));
-						//30天前的日期
+						//N天前的日期
 						calendar.add(Calendar.DATE, TaskJob.DAYS_BEFORE_TODAY); 
 						String upperBound = sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByIsodate;
-						logger.info(String.format("Date before 30 days ： " + upperBound));
+						logger.info(String.format("Date before N days ： " + upperBound));
 						BasicDBObject filter = new BasicDBObject();
 						filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE, new BasicDBObject("$lte",upperBound));
+						// 返回的document包含那些内容，后面只有testname需要
+						BasicDBObject projections = new BasicDBObject();
+						projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, 1).append("_id", 0);
 						//设置指向配置文件的col
 						generalMgdInterface.resetCol(testInfoMongdb.getColName());
-						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter);
+						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter).projection(projections);
 						//设置指向数据的col
 						generalMgdInterface.resetCol(dataMgd.getColName());
-						
 						findIter.forEach(new Block<Document>() {
 							@Override
 							public void apply(Document doc) {
 								try {
+									logger.info(doc.toJson());
 									logger.info(String.format("for each db.col(%s.%s) ", generalMgdInterface.getDbName(),generalMgdInterface.getColName()));
 									String testName = (String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME);
 									//删除ADC和CAN数据
 									generalMgdInterface.collection.deleteMany(new BasicDBObject(DataProcessor.MONGODB_KEY_TESTNAME,testName), new SingleResultCallback<DeleteResult>() {
 										@Override
 										public void onResult(final DeleteResult result, final Throwable t) {
-											logger.info(String.format("Cleared db.col(%s.%s) %d documents by test(%s)", generalMgdInterface.getDbName(),generalMgdInterface.getColName(),result.getDeletedCount(),testName));
+											logger.info(String.format("Cleared %d documents  of db.col(%s.%s)", result.getDeletedCount(),
+													dataMgd.getDbName(),dataMgd.getColName()));
 										}	
 						        	});
 								}catch(Exception e) {
@@ -91,14 +96,14 @@ public class TaskJob{
 							}
 			        	},  new SingleResultCallback<Void>() {
 							@Override
-							public void onResult(Void result, Throwable t) {
-								 logger.info("Cleared 30-day-before datas");
+							public void onResult(final Void result, final Throwable t) {
 								 //删除config数据，需要改变generalMgdInterface，所以必须在上一步结束后进行
 								 generalMgdInterface.resetCol(testInfoMongdb.getColName());
 								 generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
 									@Override
 									public void onResult(final DeleteResult result, final Throwable t) {
-										logger.info(String.format("Cleared %d configurations", result.getDeletedCount()));
+										logger.info(String.format("Cleared %d configurations of db.col(%s.%s)", result.getDeletedCount(),
+												testInfoMongdb.getDbName(),testInfoMongdb.getColName()));
 									}
 					        	});
 							}
@@ -107,15 +112,16 @@ public class TaskJob{
 						if(sess != null) {
 							sess.commitTransaction(new SingleResultCallback<Void>() {
 								@Override
-								public void onResult(Void result, Throwable t) {
+								public void onResult(final Void result, final Throwable t) {
 								}	
 				        	});
 						}
 					}catch(Exception e) {
+						logger.error("",e);
 						if(sess != null) {
 							sess.abortTransaction(new SingleResultCallback<Void>() {
 								@Override
-								public void onResult(Void result, Throwable t) {
+								public void onResult(final Void result, final Throwable t) {
 								}	
 				        	});
 						}
@@ -127,19 +133,19 @@ public class TaskJob{
 		} 
 	}
 	//配置任务的执行时间，可以配置多个
-	private final static String hms4MgdClearByInsertIsodate = "T04:00:00";
+	private final static String hms4MgdClearByInsertIsodate = "T03:00:00";
 	//每个月都要清除
 	@Scheduled(cron="* * 3 1 * ?")  //每个月1号凌晨3点清除一次
 	public void mgdClearByInsertIsodate() {
 		try {
-			logger.info("mgdClearByInsertIsodate Start Clearing 30-day-before datas and configurations");
+			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before datas and configurations");
 			MyMongoDB generalMgdInterface = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
 			MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
 			MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
 		
 			generalMgdInterface.getClient().startSession(new SingleResultCallback<ClientSession>() {
 				@Override
-				public void onResult(ClientSession sess, Throwable t) {
+				public void onResult(final ClientSession sess, final Throwable t) {
 					if(t != null) {
 						logger.warn("StartSession Throwable is not null",t);
 					}
@@ -150,26 +156,31 @@ public class TaskJob{
 					try {
 						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 						//今日日期
-						Calendar calendar=new GregorianCalendar();
+						Calendar calendar = new GregorianCalendar();
 						logger.info(String.format("Date today ： " + sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByInsertIsodate));
-						//30天前的日期
+						//N天前的日期
 						calendar.add(Calendar.DATE, TaskJob.DAYS_BEFORE_TODAY); 
 						String upperBound = sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByInsertIsodate;
-						logger.info(String.format("Date before 30 days ： " + upperBound));
+						logger.info(String.format("Date before N days ： " + upperBound));
 						BasicDBObject filter = new BasicDBObject();
-						filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE, new BasicDBObject("$lte",upperBound));
+						//testInfoMgd的dataMgd的插入文档时间字段相同，均为insertIsodate
+						filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_INSERT_ISO_DATE, new BasicDBObject("$lte",upperBound));
 						//设置指向配置文件的col
 						generalMgdInterface.resetCol(testInfoMongdb.getColName());
 						generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
 							@Override
 							public void onResult(final DeleteResult result, final Throwable t) {
-								logger.info(String.format("Cleared %d configurations", result.getDeletedCount()));
+								logger.info(String.format("Cleared %d configurations of db.col(%s.%s)", result.getDeletedCount(),
+										testInfoMongdb.getDbName(),testInfoMongdb.getColName()));
+								filter.clear();
+								filter.put(DataProcessor.MONGODB_KEY_INSERT_ISO_DATE, new BasicDBObject("$lte",upperBound));
 								//设置指向数据的col
 								generalMgdInterface.resetCol(dataMgd.getColName());
 								generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
 									@Override
 									public void onResult(final DeleteResult result, final Throwable t) {
-										logger.info(String.format("Cleared %d documents", result.getDeletedCount()));
+										logger.info(String.format("Cleared %d documents of db.col(%s.%s)", result.getDeletedCount(), 
+												dataMgd.getDbName(),dataMgd.getColName()));
 									}
 					        	});
 							}
@@ -177,15 +188,16 @@ public class TaskJob{
 						if(sess != null) {
 							sess.commitTransaction(new SingleResultCallback<Void>() {
 								@Override
-								public void onResult(Void result, Throwable t) {
+								public void onResult(final Void result, final Throwable t) {
 								}	
 				        	});
 						}
 					}catch(Exception e) {
+						logger.error("",e);
 						if(sess != null) {
 							sess.abortTransaction(new SingleResultCallback<Void>() {
 								@Override
-								public void onResult(Void result, Throwable t) {
+								public void onResult(final Void result, final Throwable t) {
 								}	
 				        	});
 						}

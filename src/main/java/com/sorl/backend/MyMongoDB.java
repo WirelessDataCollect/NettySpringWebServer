@@ -165,9 +165,9 @@ public class MyMongoDB{
 			mongoDatabase = mongoClient.getDatabase(this.dbName);
 			collection = mongoDatabase.getCollection(this.colName);
 			if(!this.getIndexName().equals("")) {
-				collection.createIndex(Indexes.descending(this.indexName), new SingleResultCallback<String>() {
+				collection.createIndex(Indexes.descending(this.getIndexName()), new SingleResultCallback<String>() {
 					@Override
-					public void onResult(String result, Throwable t) {
+					public void onResult(final String result, final Throwable t) {
 						logger.info(String.format("db.col create index by \"%s\"(indexName_-1)", result));
 					}
 				});
