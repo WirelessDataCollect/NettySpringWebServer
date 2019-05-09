@@ -37,7 +37,7 @@ public class TaskJob{
 	 * 
 	 * @return none
 	 */
-	@Scheduled(cron="* * 4 * * ?")  //凌晨4点执行数据库清空指令（DAYS_BEFORE_TODAY天之前的数据）
+	@Scheduled(cron="0 0 4 * * ?")  //凌晨4点执行数据库清空指令（DAYS_BEFORE_TODAY天之前的数据）
 	public void mgdClearByIsodate() {
 		try {
 			logger.info("mgdClearByIsodate Start Clearing N-day-before datas and configurations");
@@ -134,7 +134,7 @@ public class TaskJob{
 	//配置任务的执行时间，可以配置多个
 	private final static String hms4MgdClearByInsertIsodate = "T03:00:00";
 	//每个月都要清除
-	@Scheduled(cron="* * 3 1 * ?")  //每个月1号凌晨3点清除一次
+	@Scheduled(cron="0 0 3 1 * ?")  //每个月1号凌晨3点清除一次
 	public void mgdClearByInsertIsodate() {
 		try {
 			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before datas and configurations");

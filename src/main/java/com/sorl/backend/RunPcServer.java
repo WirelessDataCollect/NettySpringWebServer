@@ -237,7 +237,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
         	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO);//将CMD和info分成两段
         	String cmd = splitMsg[0];
-        	logger.info("Got Cmd : "+ cmd);
+        	logger.info("Got Cmd : "+ message);
         	logger.debug("Msg Len: "+String.valueOf(splitMsg.length));
         	//判断当前上位机状态（未登录、已登录等）
         	if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.DATA_GET_STA)) {//实时接收数据的时候不能进行其他操作
@@ -292,7 +292,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE, isoDate)
 	                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_INSERT_ISO_DATE, TimeUtils.getStrIsoSTime())
 	                    					.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF, testConfigFile);
-	                    			testInfoMongdb.insertOne(doc, new SingleResultCallback<Void>() {
+	                    			TCP_ServerHandler4PC.testInfoMongdb.insertOne(doc, new SingleResultCallback<Void>() {
 	                					@Override
 	                				    public void onResult(final Void result, final Throwable t) {
 	                						logger.info(String.format("Test(\"%s\") Config File Saved", testName));
@@ -336,12 +336,12 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 		//根据过滤信息来获取实验名称
                 		projections = new BasicDBObject();
 						projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, 1).append("_id", 0);
-                		FindIterable<Document> findIter = testInfoMongdb.collection.find(filters);	                	
+                		FindIterable<Document> findIter = TCP_ServerHandler4PC.testInfoMongdb.collection.find(filters).projection(projections);	                	
                 		findIter.forEach(new Block<Document>() {
 	    					@Override
 	    					public void apply(Document doc) {
 	    						try {
-	    							logger.debug("\nGet One doc name : "+(String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME));
+	    							logger.info("\nGet One doc name : "+(String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME));
 		    						//TODO 后期考虑是否全部缓存再flush
 		    						//放到Netty缓存区中，最后在SingleResultCallback中发送
 		    						TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
@@ -420,9 +420,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                		BasicDBObject filter = new BasicDBObject();
 	            			filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, testName);
 	            			//查找第一个满足testname满足要求的配置文件
-	            			projections = new BasicDBObject();
-							projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTCONF, 1).append("_id", 0);
-	            			testInfoMongdb.collection.find(filter).first(new SingleResultCallback<Document>() {
+							TCP_ServerHandler4PC.testInfoMongdb.collection.find(filter).first(new SingleResultCallback<Document>() {
 		    					@Override
 		    					public void onResult(final Document doc, final Throwable t) {
 		    						if(doc == null) {
@@ -546,10 +544,12 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 		String keyHashStr = splitInfo[1];//md5(md5(key)+salt)
 		//解析加密数值
 		try {
+			BasicDBObject projections = new BasicDBObject();
+			projections.append(InfoMgdAttributes.MONGODB_USER_KEY_KEY, 1).append("_id", 0);
 			//BasicDBObject时Bson的实现
 			BasicDBObject filter = new BasicDBObject();
 			filter.put(InfoMgdAttributes.MONGODB_USER_NAME_KEY, userStr);
-			FindIterable<Document> docIter = RunPcServer.getInfoDb().collection.find(filter) ;
+			FindIterable<Document> docIter = RunPcServer.getInfoDb().collection.find(filter).projection(projections) ;
 			//forEach：异步操作
 			docIter.forEach(new Block<Document>() {
 			    @Override
