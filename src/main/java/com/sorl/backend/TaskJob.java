@@ -35,12 +35,15 @@ public class TaskJob{
 	/**
 	 * 基于从testName提取出来的isodate为基础，进行数据清除
 	 * 
+	 * @note 使用isodate而不使用insertIsodate的原因：
+	 * 如果私有云数据库本身系统时间有问题，可能会造成把所有数据都删除的问题。
+	 * 而isodate从配置文件或者是数据中提取，删除也只是会删除那一次的配置文件或者数据
 	 * @return none
 	 */
 	@Scheduled(cron="0 0 4 * * ?")  //凌晨4点执行数据库清空指令（DAYS_BEFORE_TODAY天之前的数据）
 	public void mgdClearByIsodate() {
 		try {
-			logger.info("mgdClearByIsodate Start Clearing N-day-before datas and configurations");
+			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before datas and configurations");
 			MyMongoDB generalMgdInterface = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
 			MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
 			MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -59,11 +62,12 @@ public class TaskJob{
 						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 						//今日日期
 						Calendar calendar=new GregorianCalendar();
-						logger.info(String.format("Date today ： " + sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByIsodate));
+						logger.info(String.format("Date today : " + sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByIsodate));
 						//N天前的日期
 						calendar.add(Calendar.DATE, TaskJob.DAYS_BEFORE_TODAY); 
 						String upperBound = sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByIsodate;
-						logger.info(String.format("Date before N days ： " + upperBound));
+						logger.info(String.format("Date before N days : " + upperBound));
+						//基于插入时间（系统时间，所以系统时间不能错）
 						BasicDBObject filter = new BasicDBObject();
 						filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE, new BasicDBObject("$lte",upperBound));
 						// 返回的document包含那些内容，后面只有testname需要
@@ -71,14 +75,13 @@ public class TaskJob{
 						projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, 1).append("_id", 0);
 						//设置指向配置文件的col
 						generalMgdInterface.resetCol(testInfoMongdb.getColName());
-						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter).projection(projections);
+						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter);//.projection(projections);
 						//设置指向数据的col
 						generalMgdInterface.resetCol(dataMgd.getColName());
 						findIter.forEach(new Block<Document>() {
 							@Override
 							public void apply(Document doc) {
 								try {
-									logger.info(doc.toJson());
 									logger.info(String.format("for each db.col(%s.%s) ", generalMgdInterface.getDbName(),generalMgdInterface.getColName()));
 									String testName = (String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME);
 									//删除ADC和CAN数据
@@ -131,11 +134,16 @@ public class TaskJob{
 			logger.error("",e);
 		} 
 	}
+	
+	
+	/*
+	 * 删除，分别从config和data集合删除数据，没有加速措施
+	 */
 	//配置任务的执行时间，可以配置多个
 	private final static String hms4MgdClearByInsertIsodate = "T03:00:00";
 	//每个月都要清除
 	@Scheduled(cron="0 0 3 1 * ?")  //每个月1号凌晨3点清除一次
-	public void mgdClearByInsertIsodate() {
+	public void mgdClearByInsertIsodateSeperate() {
 		try {
 			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before datas and configurations");
 			MyMongoDB generalMgdInterface = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");

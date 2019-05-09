@@ -117,7 +117,7 @@ public class RunPcServer implements Runnable{
 	 */
 	public static synchronized void delCh(ChannelHandlerContext ctx){
 		try {
-			Map<String, ChannelAttributes> ch = RunPcServer.getChMap(); 
+			Map<String, ChannelAttributes> ch = RunPcServer.getChMap();
 			//从通道的map中删除掉这个通道
 			ch.remove(ctx.channel().remoteAddress().toString());
 			//关闭该通道,并等待future完毕
@@ -341,7 +341,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	    					@Override
 	    					public void apply(Document doc) {
 	    						try {
-	    							logger.info("\nGet One doc name : "+(String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME));
+	    							logger.debug("\nGet One doc name : "+(String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME));
 		    						//TODO 后期考虑是否全部缓存再flush
 		    						//放到Netty缓存区中，最后在SingleResultCallback中发送
 		    						TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
@@ -620,6 +620,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			}
         		});    		
         	}    		
+    	}else {
+    		RunPcServer.delCh(ctx);
     	}
     }
 
@@ -638,6 +640,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 				@Override
 				public void operationComplete(ChannelFuture f) {
 					if(!f.isSuccess()) {
+						RunPcServer.delCh(ctx);
 						logger.error("",f.cause());
 					}
 				}
@@ -649,17 +652,21 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
      * @param ctx
      */
     public static void ctxCloseFuture(ChannelHandlerContext ctx) {
-		//关闭该通道
-		ChannelFuture future = ctx.close();
-		logger.info("Got In Close : "+ctx.pipeline().channel().toString());
-    	future.addListener(new ChannelFutureListener(){
-			@Override
-			public void operationComplete(ChannelFuture f) {
-				if(!f.isSuccess()) {
-					logger.error("",f.cause());
+		try {
+			ChannelFuture future = ctx.close();
+			logger.info("Got In Close : "+ctx.pipeline().channel().toString());
+	    	future.addListener(new ChannelFutureListener(){
+				@Override
+				public void operationComplete(ChannelFuture f) {
+					if(!f.isSuccess()) {
+						logger.error("",f.cause());
+					}
 				}
-			}
-		});
+			});
+		}catch(Exception e){
+			logger.error("",e);
+		}
+		
     }
     /**
      * 获取ctx的远程地址字符串形式

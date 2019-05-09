@@ -19,7 +19,7 @@ public class TestTools implements Runnable{
 			runDeviceServer = (RunDeviceServer) App.getApplicationContext().getBean("runDeviceServer");
 			packsNum = runDeviceServer.getPacksNum();  //获取packsnums
 			runDeviceServer.resetPacksNum();  //packsnums = 0
-			logger.info(String.format("%d Packs/5s\r\n",packsNum));
+			logger.info(String.format("%d Packs in this period\r\n",packsNum));
 		}catch (Exception e) {
 			logger.error("",e);
 		} 
