@@ -1,6 +1,5 @@
 package com.sorl.backend;
 
-import static com.mongodb.client.model.Filters.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

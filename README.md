@@ -200,6 +200,9 @@ MongoFindDocsNames\SPL
 eg.查询"isodate在日期2019-02-02T13:50:23到2019-02-02T14:50:23"的数据实验名称（test）
 MongoFindDocsNames+isodate:2019-02-02T13:50:23,2019-02-02T14:50:23\SPL
 
+eg.查询"insertIsodate在日期2019-02-02T13:50:23到2019-02-02T14:50:23"的数据实验名称（test）
+MongoFindDocsNames+insertIsodate:2019-02-02T13:50:23,2019-02-02T14:50:23\SPL
+
 ```
 
 ```
@@ -246,11 +249,12 @@ GetTestConfig+配置文件（String格式）\SPL
 
 # 数据库操作
 
-快速添加一个数据
+```bash
+# 删除所有数据
+db.COL.dorp()
+# 查询所有数据
+db.COL.find().pretty()
 
-```
-eg.
-db.data.insert({test:"test1_20190121",wifi_client_id:0,yyyy_mm_dd:8245810,headtime:8245850,adc_count_short:2,io1:0,io2:0,adc_val:{ch1:[2676,2726],ch2:[2676,2726],ch3:[2676,2726],ch4:[2676,2726]},raw_data:"rllllaw datasslklks"})
 ```
 
 # 下一步改进
