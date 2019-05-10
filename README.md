@@ -154,6 +154,7 @@ PC上位机通过TCP连接服务器8089端口，实施接受经过服务器转�
 	"test" : "test1_2019-02-02T13:50:23",
 	"isodate" : "2019-02-02T13:50:23"
 	"insertIsodate" : "2019-05-05T11:59:59",
+	"dataCol" : "2019-05",
 	"config" : XXX(String)
 }
 ```
@@ -200,8 +201,14 @@ MongoFindDocsNames\SPL
 eg.查询"isodate在日期2019-02-02T13:50:23到2019-02-02T14:50:23"的数据实验名称（test）
 MongoFindDocsNames+isodate:2019-02-02T13:50:23,2019-02-02T14:50:23\SPL
 
+eg.查询"isodate在日期2019-02-02到2019-02-03"的数据实验名称（test）,不包括2019-02-03
+MongoFindDocsNames+isodate:2019-02-02,2019-02-03\SPL
+
 eg.查询"insertIsodate在日期2019-02-02T13:50:23到2019-02-02T14:50:23"的数据实验名称（test）
 MongoFindDocsNames+insertIsodate:2019-02-02T13:50:23,2019-02-02T14:50:23\SPL
+
+eg.查询"insertIsodate在日期2019-02-02到2019-02-03"的数据实验名称（test）,不包括2019-02-03
+MongoFindDocsNames+insertIsodate:2019-02-02,2019-02-03\SPL
 
 ```
 
@@ -209,8 +216,8 @@ MongoFindDocsNames+insertIsodate:2019-02-02T13:50:23,2019-02-02T14:50:23\SPL
 eg.获取所有的doc
 MongoFindDocs
 
-eg.获取"测试名称：test1_2019-02-02T13:50:23"，"ADC的数据"
-MongoFindDocs+test:test1_2019-02-02T13:50:23;dataType:ADC
+eg.获取"测试名称：test1_2019-02-02T13:50:23"
+MongoFindDocs+test:test1_2019-02-02T13:50:23
 
 ```
 

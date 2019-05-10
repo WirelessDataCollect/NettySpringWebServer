@@ -13,13 +13,16 @@ public class TestTools implements Runnable{
 	private int packsNum;
 	private final static Logger logger = Logger.getLogger(TestTools.class);
 	private RunDeviceServer runDeviceServer;
+	private MyMongoDB dataMgd;
 	@Override
 	public void run() {
 		try {
 			runDeviceServer = (RunDeviceServer) App.getApplicationContext().getBean("runDeviceServer");
+			dataMgd = (MyMongoDB) App.getApplicationContext().getBean("myMongoDB");
 			packsNum = runDeviceServer.getPacksNum();  //获取packsnums
 			runDeviceServer.resetPacksNum();  //packsnums = 0
-			logger.info(String.format("%d Packs in this period\r\n",packsNum));
+			logger.info(String.format("Periodic Packs ： %d",packsNum));
+			logger.info(String.format("Data's Db.Col  : %s.%s\r\n", dataMgd.getDbName(),dataMgd.getColName()));
 		}catch (Exception e) {
 			logger.error("",e);
 		} 

@@ -113,19 +113,30 @@ public class DataProcessor {
 	public final static String MONGODB_KEY_ADC_VAL = "adc_val";
 	//MongoDB的数据key：原始数据
 	public final static String MONGODB_KEY_RAW_DATA = "raw_data";
-	private MyMongoDB mongodb;
+	private MyMongoDB dataMgd;
 	private static final Logger logger = Logger.getLogger(DataProcessor.class);
 	/**
-	* 数据处理obj的构造函数
+	* 数据库连接对象的构造函数
 	*
-	* @param dbname 数据库名称
+	* @param myMongoDB 数据库
 	* @return 无
 	* @throws 无
 	*/		
 	public void setMongodb(MyMongoDB myMongoDB) {
-		mongodb = myMongoDB;//这个mongodb是依赖注入的
+		dataMgd = myMongoDB;
+		//指向当前的数据集合
+		dataMgd.resetCol(TimeUtils.getStrIsoMTime());
 	}
-	
+	/**
+	* 数据库连接对象返回
+	*
+	* @param 无
+	* @return 无
+	* @throws 无
+	*/		
+	public MyMongoDB getMongodb() {
+		return this.dataMgd;
+	}	
 	SingleResultCallback<Void> callback;
 	/**
 	* 总的数据包的解析和存储方法
@@ -165,7 +176,7 @@ public class DataProcessor {
 		/*doc存入数据库*/
 		//mongodb.insertOne已加锁
 		try{
-			mongodb.insertOne(doc, new SingleResultCallback<Void>() {
+			dataMgd.insertOne(doc, new SingleResultCallback<Void>() {
 			    public void onResult(final Void result, final Throwable t) {
 			    	///用于指示DOC是否成功插入
 //			    	logger.info("Document inserted!");

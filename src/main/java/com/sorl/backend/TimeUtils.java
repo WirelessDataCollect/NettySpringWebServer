@@ -20,11 +20,17 @@ public class TimeUtils {
 	 * @return {@link String}
 	 */
 	public static String getStrIsoSTime() {
-		//今日日期
 		Calendar calendar = new GregorianCalendar();
-//		TimeZone tz = TimeZone.getTimeZone("Asia/Shanghai");
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); 
-//		df.setTimeZone(tz);
+		return df.format(calendar.getTime());
+	}
+	/**
+	 * 获取当前的yyyy-MM时间
+	 * @return {@link String}
+	 */
+	public static String getStrIsoMTime() {
+		Calendar calendar = new GregorianCalendar();
+		DateFormat df = new SimpleDateFormat("yyyy-MM"); 
 		return df.format(calendar.getTime());
 	}
 }

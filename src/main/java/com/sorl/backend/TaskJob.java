@@ -3,8 +3,10 @@ package com.sorl.backend;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 
 import org.apache.log4j.Logger;
@@ -15,6 +17,7 @@ import com.mongodb.Block;
 import com.mongodb.async.SingleResultCallback;
 import com.mongodb.async.client.ClientSession;
 import com.mongodb.async.client.FindIterable;
+import com.mongodb.client.model.Indexes;
 import com.mongodb.client.result.DeleteResult;
 
 /**
@@ -32,6 +35,29 @@ public class TaskJob{
 	private final static int DAYS_BEFORE_TODAY = -60;
 	//配置任务的执行时间，可以配置多个
 	private final static String hms4MgdClearByIsodate = "T04:00:00";
+	
+	/**
+	 * 更新用于插入数据的MongoClient所指向的集合
+	 * @param 无
+	 * @throws ParseException 
+	 */
+	@Scheduled(cron="0 0 0 1 * ?") 
+	public void dataMgdUpdate() throws ParseException {
+		
+		logger.info("Start updating data mongoclient's collection...");
+		MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
+		dataMgd.resetCol(TimeUtils.getStrIsoMTime());
+		//建立一个索引
+		if(!dataMgd.getIndexName().equals("")) {
+			dataMgd.collection.createIndex(Indexes.descending(dataMgd.getIndexName()), new SingleResultCallback<String>() {
+				@Override
+				public void onResult(final String result, final Throwable t) {
+					logger.info(String.format("db.col create index by \"%s\"(indexName_-1)", result));
+				}
+			});
+		}
+		logger.info("Updated data mongoclient's collection successfully");
+	}
 	/**
 	 * 基于从testName提取出来的isodate为基础，进行数据清除
 	 * 
@@ -40,7 +66,8 @@ public class TaskJob{
 	 * 而isodate从配置文件或者是数据中提取，删除也只是会删除那一次的配置文件或者数据
 	 * @return none
 	 */
-	@Scheduled(cron="0 0 4 * * ?")  //凌晨4点执行数据库清空指令（DAYS_BEFORE_TODAY天之前的数据）
+	//取消以下注释，则周期性运行
+//	@Scheduled(cron="0 0 4 * * ?")  //凌晨4点执行数据库清空指令（DAYS_BEFORE_TODAY天之前的数据）
 	public void mgdClearByIsodate() {
 		try {
 			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before datas and configurations");
@@ -75,7 +102,7 @@ public class TaskJob{
 						projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, 1).append("_id", 0);
 						//设置指向配置文件的col
 						generalMgdInterface.resetCol(testInfoMongdb.getColName());
-						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter);//.projection(projections);
+						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter).projection(projections);
 						//设置指向数据的col
 						generalMgdInterface.resetCol(dataMgd.getColName());
 						findIter.forEach(new Block<Document>() {
@@ -141,8 +168,8 @@ public class TaskJob{
 	 */
 	//配置任务的执行时间，可以配置多个
 	private final static String hms4MgdClearByInsertIsodate = "T03:00:00";
-	//每个月都要清除
-	@Scheduled(cron="0 0 3 1 * ?")  //每个月1号凌晨3点清除一次
+	//取消以下注释，则周期性运行
+//	@Scheduled(cron="0 0 3 1 * ?")  //每个月1号凌晨3点清除一次
 	public void mgdClearByInsertIsodateSeperate() {
 		try {
 			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before datas and configurations");
