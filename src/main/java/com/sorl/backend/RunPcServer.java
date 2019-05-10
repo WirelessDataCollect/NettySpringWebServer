@@ -325,8 +325,9 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
     	             				case TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME://过滤测试名称，test:xxxxx
     	             					filters.put(oneFilter[0], oneFilter[1]);
     	             					break;
-    	             				case TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_INSERT_ISO_DATE:
-    	             				case TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE://过滤年月日,yyyy_mm_dd:xxxxxx（该日期从测试名称中获取）
+    	             				//过滤年月日,yyyy-MM-ddTHH:mm:ss
+    	             				case TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_INSERT_ISO_DATE://配置文件插入的时间（以服务器时间为准）
+    	             				case TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE://配置文件插入的时间（以上位机时间为准，从测试名称中提取得到）
     	             					String[] lowerUpperData = oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND);
     	             					if(lowerUpperData.length > 1) {
     	             						lowerBound = (oneFilter[1].split(TCP_ServerHandler4PC.SEG_LOWER_UPPER_BOUND,2))[0];//小的日期
