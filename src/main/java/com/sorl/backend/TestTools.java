@@ -21,7 +21,7 @@ public class TestTools implements Runnable{
 			dataMgd = (MyMongoDB) App.getApplicationContext().getBean("myMongoDB");
 			packsNum = runDeviceServer.getPacksNum();  //获取packsnums
 			runDeviceServer.resetPacksNum();  //packsnums = 0
-			logger.info(String.format("Periodic Packs ： %d",packsNum));
+			logger.info(String.format("Periodic Packs : %d",packsNum));
 			logger.info(String.format("Data's Db.Col  : %s.%s\r\n", dataMgd.getDbName(),dataMgd.getColName()));
 		}catch (Exception e) {
 			logger.error("",e);

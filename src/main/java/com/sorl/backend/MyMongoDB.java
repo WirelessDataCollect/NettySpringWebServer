@@ -47,6 +47,13 @@ public class MyMongoDB{
 		return this.mongoClient;
 	}
 	/**
+	 * 获取mongodb数据库
+	 * @return {@link MongoDatabase}
+	 */
+	public MongoDatabase getDb() {
+		return this.mongoDatabase;
+	}	
+	/**
 	 * num 从mongodb中获取到的doc个数
 	 */
 	volatile Long docNum=(long) -1;

@@ -17,6 +17,7 @@ import com.mongodb.Block;
 import com.mongodb.async.SingleResultCallback;
 import com.mongodb.async.client.ClientSession;
 import com.mongodb.async.client.FindIterable;
+import com.mongodb.async.client.MongoIterable;
 import com.mongodb.client.model.Indexes;
 import com.mongodb.client.result.DeleteResult;
 
@@ -43,7 +44,6 @@ public class TaskJob{
 	 */
 	@Scheduled(cron="0 0 0 1 * ?") 
 	public void dataMgdUpdate() throws ParseException {
-		
 		logger.info("Start updating data mongoclient's collection...");
 		MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
 		dataMgd.resetCol(TimeUtils.getStrIsoMTime());
@@ -73,7 +73,6 @@ public class TaskJob{
 			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before datas and configurations");
 			MyMongoDB generalMgdInterface = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
 			MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
-			MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
 		
 			generalMgdInterface.getClient().startSession(new SingleResultCallback<ClientSession>() {
 				@Override
@@ -99,24 +98,28 @@ public class TaskJob{
 						filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_ISODATE, new BasicDBObject("$lte",upperBound));
 						// 返回的document包含那些内容，后面只有testname需要
 						BasicDBObject projections = new BasicDBObject();
-						projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, 1).append("_id", 0);
+						projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, 1)
+									.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_COL_INDEX_OF_DATA, 1)
+									.append("_id", 0);
 						//设置指向配置文件的col
 						generalMgdInterface.resetCol(testInfoMongdb.getColName());
-						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter).projection(projections);
-						//设置指向数据的col
-						generalMgdInterface.resetCol(dataMgd.getColName());
+						FindIterable<Document> findIter = generalMgdInterface.collection.find(filter).projection(projections)
+								.sort(new BasicDBObject(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_COL_INDEX_OF_DATA, 1));
 						findIter.forEach(new Block<Document>() {
 							@Override
 							public void apply(Document doc) {
 								try {
-									logger.info(String.format("for each db.col(%s.%s) ", generalMgdInterface.getDbName(),generalMgdInterface.getColName()));
+									//指向数据集合
+									if(!((String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_COL_INDEX_OF_DATA)).equals(generalMgdInterface.getColName())) {
+										generalMgdInterface.resetCol((String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_COL_INDEX_OF_DATA));
+									}
+									logger.info(String.format("Connected to db.col(%s.%s) ", generalMgdInterface.getDbName(),generalMgdInterface.getColName()));
 									String testName = (String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME);
 									//删除ADC和CAN数据
 									generalMgdInterface.collection.deleteMany(new BasicDBObject(DataProcessor.MONGODB_KEY_TESTNAME,testName), new SingleResultCallback<DeleteResult>() {
 										@Override
 										public void onResult(final DeleteResult result, final Throwable t) {
-											logger.info(String.format("Cleared %d documents  of db.col(%s.%s)", result.getDeletedCount(),
-													dataMgd.getDbName(),dataMgd.getColName()));
+											logger.info(String.format("Cleared %d documents", result.getDeletedCount()));
 										}	
 						        	});
 								}catch(Exception e) {
@@ -131,8 +134,7 @@ public class TaskJob{
 								 generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
 									@Override
 									public void onResult(final DeleteResult result, final Throwable t) {
-										logger.info(String.format("Cleared %d configurations of db.col(%s.%s)", result.getDeletedCount(),
-												testInfoMongdb.getDbName(),testInfoMongdb.getColName()));
+										logger.info(String.format("Cleared %d configurations", result.getDeletedCount()));
 									}
 					        	});
 							}
@@ -172,11 +174,9 @@ public class TaskJob{
 //	@Scheduled(cron="0 0 3 1 * ?")  //每个月1号凌晨3点清除一次
 	public void mgdClearByInsertIsodateSeperate() {
 		try {
-			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before datas and configurations");
+			logger.info("mgdClearByInsertIsodate Start Clearing N-day-before documents and configurations");
 			MyMongoDB generalMgdInterface = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
-			MyMongoDB testInfoMongdb = (MyMongoDB)App.getApplicationContext().getBean("testConfMongoDB");
-			MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
-		
+			
 			generalMgdInterface.getClient().startSession(new SingleResultCallback<ClientSession>() {
 				@Override
 				public void onResult(final ClientSession sess, final Throwable t) {
@@ -197,26 +197,38 @@ public class TaskJob{
 						String upperBound = sdf.format(calendar.getTime()) + TaskJob.hms4MgdClearByInsertIsodate;
 						logger.info(String.format("Date before N days ： " + upperBound));
 						BasicDBObject filter = new BasicDBObject();
-						//testInfoMgd的dataMgd的插入文档时间字段相同，均为insertIsodate
-						filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_INSERT_ISO_DATE, new BasicDBObject("$lte",upperBound));
-						//设置指向配置文件的col
-						generalMgdInterface.resetCol(testInfoMongdb.getColName());
-						generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
+						MongoIterable<String> colNameList = generalMgdInterface.getDb().listCollectionNames();
+						colNameList.forEach(new Block<String>() {
 							@Override
-							public void onResult(final DeleteResult result, final Throwable t) {
-								logger.info(String.format("Cleared %d configurations of db.col(%s.%s)", result.getDeletedCount(),
-										testInfoMongdb.getDbName(),testInfoMongdb.getColName()));
-								filter.clear();
-								filter.put(DataProcessor.MONGODB_KEY_INSERT_ISO_DATE, new BasicDBObject("$lte",upperBound));
-								//设置指向数据的col
-								generalMgdInterface.resetCol(dataMgd.getColName());
-								generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
-									@Override
-									public void onResult(final DeleteResult result, final Throwable t) {
-										logger.info(String.format("Cleared %d documents of db.col(%s.%s)", result.getDeletedCount(), 
-												dataMgd.getDbName(),dataMgd.getColName()));
+							public void apply(String colName) {
+								try {
+									//设置指向集合
+									generalMgdInterface.resetCol(colName);
+									if(colName.equals("config")) {
+										//testInfoMgd的dataMgd的插入文档时间字段相同，均为insertIsodate
+										filter.put(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_INSERT_ISO_DATE, new BasicDBObject("$lte",upperBound));
+									}else {
+										filter.put(DataProcessor.MONGODB_KEY_INSERT_ISO_DATE, new BasicDBObject("$lte",upperBound));
 									}
-					        	});
+									generalMgdInterface.collection.deleteMany(filter, new SingleResultCallback<DeleteResult>() {
+										@Override
+										public void onResult(final DeleteResult result, final Throwable t) {
+											if(colName.equals("config")) {
+												logger.info(String.format("Cleared %d configurations", result.getDeletedCount()));
+											}else {
+												logger.info(String.format("Cleared %d documents", result.getDeletedCount()));
+											}
+											
+										}
+						        	});
+								}catch(Exception e) {
+									logger.info("",e);
+								}
+							}
+			        	},  new SingleResultCallback<Void>() {
+							@Override
+							public void onResult(final Void result, final Throwable t) {
+								logger.info("mgdClearByInsertIsodate Cleared N-day-before documents and configurations Over");
 							}
 			        	});
 						if(sess != null) {
