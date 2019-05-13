@@ -9,7 +9,10 @@ import org.springframework.ui.ModelMap;
 import com.mongodb.BasicDBObject;
 import com.sorl.backend.MyMongoDB;
 import com.sorl.attributes.InfoMgdAttributes;
-import com.sorl.backend.RunPcServer;;
+import com.sorl.backend.RunPcServer;
+import com.sorl.backend.TaskJob;
+
+import org.apache.log4j.Logger;
 
 /**
 * 
@@ -22,6 +25,8 @@ import com.sorl.backend.RunPcServer;;
 @Controller
 //@RequestMapping("/ServerWeb")  //控制器WebController中提到的虚拟子文件夹
 public class LoginController{ 
+	private final static Logger logger = Logger.getLogger(TaskJob.class);
+	
 	@RequestMapping(value = "/",method = RequestMethod.GET)//地址
 	   public ModelAndView page() {
 		   return new ModelAndView("login","command",new Admin());//jsp文件
@@ -46,7 +51,7 @@ public class LoginController{
 	   BasicDBObject filter = new BasicDBObject();
 	   filter.put((String)InfoMgdAttributes.MONGODB_USER_NAME_KEY, (String)admin.getName());
 	   filter.put((String)InfoMgdAttributes.MONGODB_USER_KEY_KEY, (String)admin.getKey());
-	   System.out.println(filter);
+	   logger.info(filter.toJson());
 	   Long docIter = infoMongodb.count(filter) ;
 	   if(docIter >= 1) {
 	      model.addAttribute("name", admin.getName());
