@@ -40,7 +40,7 @@
     </tr>
 
 </table>  
-<div id="beian" style='position:absolute;bottom:0px;text-align:center'>Copyright © 2013-2018 NeSC课题组测试  nesctech.com All Rights Reserved. 备案号：浙ICP备<a href="http://www.miitbeian.gov.cn">18047772</a>号</div>
+<div id="beian" style='position:absolute;bottom:0px;text-align:center'>Copyright © 2013-2019 NeSC课题组测试  nesctech.com All Rights Reserved. 备案号：浙ICP备<a href="http://www.miitbeian.gov.cn">18047772</a>号</div>
     
 
 </form:form>
