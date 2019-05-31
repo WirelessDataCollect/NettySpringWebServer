@@ -253,7 +253,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			default:
         				break;
         		}
-         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.LOGINED_STA)) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.REQUEST_CONNECT_STA)) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -345,27 +345,32 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 						projections.append(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME, 1).append("_id", 0);
                 		FindIterable<Document> findIter = TCP_ServerHandler4PC.testInfoMongdb.collection.find(filters).projection(projections);	                	
                 		findIter.forEach(new Block<Document>() {
-	    					@Override
-	    					public void apply(Document doc) {
-	    						try {
-	    							logger.debug("\nGet One doc name : "+(String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME));
-		    						//TODO 后期考虑是否全部缓存再flush
-		    						//放到Netty缓存区中，最后在SingleResultCallback中发送
-		    						TCP_ServerHandler4PC.writeFlushFuture(ctx, TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
-		    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+(String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME));//发送完毕收到一个通知
-	    						}catch(Exception e) {
-	    							logger.info("",e);
-	    						}
-	    						
-	    					}
-	                	},  new SingleResultCallback<Void>() {
-	    					@Override
-	    					public void onResult(final Void result, final Throwable t) {
-	    						TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
-	    								TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
-	    						logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);	    						
-	    					}	
-	                	});
+                            @Override
+                            public void apply(Document doc) {
+                                try {
+                                    //没有超过水位
+                                    if(!ctx.channel().isWritable()){
+                                        ctx.flush();
+                                    }
+                                    ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
+                                    		TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+
+                                    		(String)doc.get(TCP_ServerHandler4PC.TESTINFOMONGODB_KEY_TESTNAME)+
+                            				TCP_ServerHandler4PC.SEG_TOW_PACK, CharsetUtil.UTF_8));//发给上位机原始数据
+                                }catch(Exception e) {
+                                    logger.error("",e);
+                                }
+                            }
+                        },  new SingleResultCallback<Void>() {
+                            @Override
+                            public void onResult(final Void result, final Throwable t) {
+                                ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+
+                                		TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+
+                                		TCP_ServerHandler4PC.DONE_SIGNAL_OVER+
+                                		TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
+                                ctx.flush();
+                                logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS_NAMES+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+                            }
+                        });
 	                	break;
 	                	//获取MongoDB中的文档信息，可以使用filter
 	                	//!!!!!只支持查询一次测试
