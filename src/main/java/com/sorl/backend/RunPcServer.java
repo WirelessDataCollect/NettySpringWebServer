@@ -253,7 +253,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			default:
         				break;
         		}
-         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.REQUEST_CONNECT_STA)) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.LOGINED_STA)) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -418,10 +418,14 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 											    @Override
 											    public void apply(final Document document) {//每个doc所做的操作
 											    	try {
-											    		ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+":",CharsetUtil.UTF_8));//加入抬头
-											    		Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA); 
-												    	byte[] rawDataByte = rawDataBin.getData();
-												    	ctx.write(Unpooled.wrappedBuffer(rawDataByte));//发给上位机原始数据
+	                                                    //没有超过水位
+	                                                    if(!ctx.channel().isWritable()){
+	                                                        ctx.flush();
+	                                                    }
+	                                                    ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL,CharsetUtil.UTF_8));//加入抬头
+	                                                    Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA);
+	                                                    byte[] rawDataByte = rawDataBin.getData();
+	                                                    ctx.write(Unpooled.wrappedBuffer(rawDataByte));//发给上位机原始数据
 											    	}catch(Exception e) {
 											    		logger.error("",e);
 											    	}	
