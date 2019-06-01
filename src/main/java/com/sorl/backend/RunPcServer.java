@@ -438,7 +438,8 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 											        @Override
 											        public void onResult(final Void result, final Throwable t) {
 		                                                ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+
-		                                                		TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER,CharsetUtil.UTF_8));
+		                                                		TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER+
+		                                                		TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
 		                                                ctx.flush();
 											        	logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
 											        }			    	

@@ -43,10 +43,12 @@ public class TaskJob{
 	 * @throws ParseException 
 	 */
 	@Scheduled(cron="0 0 0 1 * ?") 
+//	@Scheduled(cron="0 20/2 * * * ?") 
 	public void dataMgdUpdate() throws ParseException {
 		logger.info("Start updating data mongoclient's collection...");
 		MyMongoDB dataMgd = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
-		dataMgd.resetCol(TimeUtils.getStrIsoMTime());
+//		dataMgd.resetCol(TimeUtils.getStrIsoMTime());
+		dataMgd.resetCol("2019-07");
 		//建立一个索引
 		if(!dataMgd.getIndexName().equals("")) {
 			dataMgd.collection.createIndex(Indexes.descending(dataMgd.getIndexName()), new SingleResultCallback<String>() {
