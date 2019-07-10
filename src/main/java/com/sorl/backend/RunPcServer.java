@@ -253,7 +253,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         			default:
         				break;
         		}
-         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.REQUEST_CONNECT_STA)) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
+         	}else if(RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).getStatus().equals(ChannelAttributes.LOGINED_STA)) {//已经登录REQUEST_CONNECT_STA) {LOGINED_STA
         		//TODO 将REQUEST_CONNECT_STA改回来
         		//获取存放测试数据的数据库
         		MyMongoDB mongodb = (MyMongoDB)App.getApplicationContext().getBean("myMongoDB");
@@ -412,39 +412,40 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 										}
 										//查询集合和下一个月的集合
 										//最多查询两个月，时间跨度不能太大
-										for(String colName : yyyy_MM) {
-											MyMongoDB generalMgdIf = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
-											//指向相应的集合
-											generalMgdIf.resetCol(colName);
-											BasicDBObject projections = new BasicDBObject();
-											projections.append(DataProcessor.MONGODB_KEY_RAW_DATA, 1).append("_id", 0);
-					                		FindIterable<Document> docIter = mongodb.collection.find(filterDocs).projection(projections) ;
-					             			docIter.forEach(new Block<Document>() {
-											    @Override
-											    public void apply(final Document document) {//每个doc所做的操作
-											    	try {
-	                                                    //没有超过水位
-	                                                    if(!ctx.channel().isWritable()){
-	                                                        ctx.flush();
-	                                                    }
-	                                                    ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL,CharsetUtil.UTF_8));//加入抬头
-	                                                    Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA);
-	                                                    byte[] rawDataByte = rawDataBin.getData();
-	                                                    ctx.write(Unpooled.wrappedBuffer(rawDataByte));//发给上位机原始数据
-											    	}catch(Exception e) {
-											    		logger.error("",e);
-											    	}	
-											    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作 	
-											        @Override
-											        public void onResult(final Void result, final Throwable t) {
-		                                                ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+
-		                                                		TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER+
-		                                                		TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
-		                                                ctx.flush();
-											        	logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
-											        }			    	
-											    });
-										}
+//										for(String colName : yyyy_MM) {
+										String colName = yyyy_MM[0];
+										MyMongoDB generalMgdIf = (MyMongoDB)App.getApplicationContext().getBean("generalMgdInterface");
+										//指向相应的集合
+										generalMgdIf.resetCol(colName);
+										BasicDBObject projections = new BasicDBObject();
+										projections.append(DataProcessor.MONGODB_KEY_RAW_DATA, 1).append("_id", 0);
+				                		FindIterable<Document> docIter = mongodb.collection.find(filterDocs).projection(projections) ;
+				             			docIter.forEach(new Block<Document>() {
+										    @Override
+										    public void apply(final Document document) {//每个doc所做的操作
+										    	try {
+                                                    //没有超过水位
+                                                    if(!ctx.channel().isWritable()){
+                                                        ctx.flush();
+                                                    }
+                                                    ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL,CharsetUtil.UTF_8));//加入抬头
+                                                    Binary rawDataBin = (Binary)document.get(DataProcessor.MONGODB_KEY_RAW_DATA);
+                                                    byte[] rawDataByte = rawDataBin.getData();
+                                                    ctx.write(Unpooled.wrappedBuffer(rawDataByte));//发给上位机原始数据
+										    	}catch(Exception e) {
+										    		logger.error("",e);
+										    	}	
+										    }}, new SingleResultCallback<Void>() {//所有操作完成后的工作 	
+										        @Override
+										        public void onResult(final Void result, final Throwable t) {
+	                                                ctx.write(Unpooled.copiedBuffer(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+
+	                                                		TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER+
+	                                                		TCP_ServerHandler4PC.SEG_TOW_PACK,CharsetUtil.UTF_8));
+	                                                ctx.flush();
+										        	logger.debug(TCP_ServerHandler4PC.MONGODB_FIND_DOCS+TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OVER);
+										        }			    	
+										    });
+//										}
 									} catch (ParseException e) {
 										logger.info("",e);
 									}
