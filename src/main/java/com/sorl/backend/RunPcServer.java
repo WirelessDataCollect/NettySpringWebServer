@@ -237,7 +237,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
         	BasicDBObject projections = null;
         	//转化为string
         	String message = ((ByteBuf)msg).toString(CharsetUtil.UTF_8);
-        	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO);//将CMD和info分成两段
+        	String[] splitMsg = message.split(TCP_ServerHandler4PC.SEG_CMD_INFO,2);//将CMD和info分成两段
         	String cmd = splitMsg[0];
         	logger.info("Got Cmd : "+ message);
         	logger.debug("Msg Len: "+String.valueOf(splitMsg.length));
