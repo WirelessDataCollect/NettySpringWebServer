@@ -28,7 +28,6 @@ public class DeviceServerTools{
 					Map.Entry<String,ChannelAttributes> entry = item.next();
 					//判断是否为实时获取数据的状态,且和测试名称对应
 					if((entry.getValue().getStatus()==ChannelAttributes.DATA_GET_STA) && (entry.getValue().getTestName().equals(testName)) || entry.getValue().getTestName().equals("all")) {
-						ByteBuf temp1 = temp.copy();
 						//发送数据
 						TCP_ServerHandler4PC.writeFlushFuture(entry.getValue().getContext(),Unpooled.copiedBuffer(temp));
 					}

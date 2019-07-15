@@ -231,6 +231,7 @@ MongoFindDocs+test:test1_2019-02-02T13:50:23
 |StopGetRtdata|none`\SPL`|StopGetRtdata:OK`\SDSPL`|停止获取实时数据|
 |HeartBeat|none`\SPL`|HeartBeat:GET`\SDSPL`|心跳包|
 |Disconnect|none`\SPL`|Disconnect:OK`\SDSPL`|断开连接|
+|StopSendDocs|none`\SPL`|StopSendDocs:OK`\SDSPL`|停止发送数据|
 
 **说明**
 

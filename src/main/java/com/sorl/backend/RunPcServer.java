@@ -198,6 +198,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	private final static String PC_START_ONE_TEST = "StartTest";
 	private final static String MONGODB_FIND_DOCS = "MongoFindDocs";//获取mongodb中的集合名称
 	private final static String MONGODB_FIND_DOCS_NAMES = "MongoFindDocsNames";//获取mongodb中的集合名称
+	private final static String PC_WANT_STOP_SEND_DOC = "StopSendDocs";//获取mongodb中的集合名称
 	//中等优先级
 	private final static String PC_WANT_LOGIN = "Login";//登录指令
 	private final static String PC_WANT_GET_TEST_CONFIG = "GetTestConfig";//获取测试配置文件
@@ -375,6 +376,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 	                	//获取MongoDB中的文档信息，可以使用filter
 	                	//!!!!!只支持查询一次测试
                 	case TCP_ServerHandler4PC.MONGODB_FIND_DOCS:
+                		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).allowSendDocs();
                 		//filter
             			BasicDBObject filterDocs = new BasicDBObject();
                 		//TODO  to test
@@ -420,9 +422,12 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 										BasicDBObject projections = new BasicDBObject();
 										projections.append(DataProcessor.MONGODB_KEY_RAW_DATA, 1).append("_id", 0);
 				                		FindIterable<Document> docIter = mongodb.collection.find(filterDocs).projection(projections) ;
-				             			docIter.forEach(new Block<Document>() {
+				             			docIter.forEach(new Block<Document>() {	             				
 										    @Override
 										    public void apply(final Document document) {//每个doc所做的操作
+										    	if(!RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).isAllowSendDocs()) {
+					             					return;
+					             				}
 										    	try {
                                                     //没有超过水位
                                                     if(!ctx.channel().isWritable()){
@@ -476,6 +481,11 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
                 		break;
                 	case TCP_ServerHandler4PC.MONGODB_CREATE_COL://创建collection
                 		//TODO
+                		break;
+                	case TCP_ServerHandler4PC.PC_WANT_STOP_SEND_DOC://创建collection
+                		RunPcServer.getChMap().get(ctx.channel().remoteAddress().toString()).stopSendDocs();
+                		TCP_ServerHandler4PC.writeFlushFuture(ctx,TCP_ServerHandler4PC.PC_WANT_STOP_SEND_DOC+
+                				TCP_ServerHandler4PC.SEG_CMD_DONE_SIGNAL+TCP_ServerHandler4PC.DONE_SIGNAL_OK);
                 		break;
                 	case TCP_ServerHandler4PC.PC_WANT_GET_RTDATA://修改位GetRtData的状态
                 		try {

@@ -18,6 +18,7 @@ public class ChannelAttributes {
 	public final static int REQUEST_CONNECT_STA = 0x01;
 	public final static int LOGINED_STA=0x02;
 	public final static int DATA_GET_STA = 0x40;
+	private boolean ALLOW_SEND_DOCS;
 	private final Channel channel;//通道,初始化后不可改变
 	private final ChannelHandlerContext context;
 	private String encryption;//加密算法
@@ -36,6 +37,7 @@ public class ChannelAttributes {
 		this.encryption = "Md5";//保存RSA加密算法信息
 		this.enrypt_salt = Md5.getRandStr();//随机初始化salt
 		this.testName = "";
+		this.allowSendDocs();
 	}
 	/**
 	 * 返回该通道的状态
@@ -43,6 +45,24 @@ public class ChannelAttributes {
 	 */
 	public Integer getStatus() {
 		return this.status;
+	}
+	/**
+	 * 可以发送数据
+	 */
+	public void allowSendDocs() {
+		this.ALLOW_SEND_DOCS = true;
+	}
+	/**
+	 * 可以发送数据？
+	 */
+	public boolean isAllowSendDocs() {
+		return this.ALLOW_SEND_DOCS;
+	}
+	/**
+	 * 不允许发送数据
+	 */
+	public void stopSendDocs() {
+		this.ALLOW_SEND_DOCS = false;
 	}
 	/**
 	 * 设置该通道的状态
