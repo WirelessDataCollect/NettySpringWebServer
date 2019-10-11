@@ -421,7 +421,7 @@ class TCP_ServerHandler4PC  extends ChannelInboundHandlerAdapter {
 										generalMgdIf.resetCol(colName);
 										BasicDBObject projections = new BasicDBObject();
 										projections.append(DataProcessor.MONGODB_KEY_RAW_DATA, 1).append("_id", 0);
-				                		FindIterable<Document> docIter = mongodb.collection.find(filterDocs).projection(projections) ;
+				                		FindIterable<Document> docIter = generalMgdIf.collection.find(filterDocs).projection(projections) ;
 				             			docIter.forEach(new Block<Document>() {	             				
 										    @Override
 										    public void apply(final Document document) {//每个doc所做的操作
